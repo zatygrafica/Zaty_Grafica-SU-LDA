@@ -1,0 +1,119 @@
+@media print {
+  /* 1. Hide everything by default */
+  body > *:not(.printable-area-container) {
+    display: none !important;
+  }
+
+  /* 2. Style the root body and html for printing */
+  body, html {
+    background: white !important;
+    color: black !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* 3. The modal root becomes the main print container.
+     It needs to be made visible and reset from its 'fixed' screen styles. */
+  .printable-area-container {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* 4. Reset all the intermediate divs inside the modal structure.
+     This is crucial to remove fixed heights, padding, overflow, etc. */
+  .printable-area-container > div,
+  .printable-area-container > div > div,
+  .printable-area-container > div > div > div {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+    background: none !important;
+  }
+
+  /* 5. Ensure the actual content area is visible and ready */
+  .printable-area, .printable-area * {
+    visibility: visible !important;
+  }
+  .printable-content {
+    color: black !important;
+    padding: 0 !important; /* Let @page margins handle spacing */
+  }
+
+  /* 6. Hide elements specifically marked as no-print (like buttons) */
+  .no-print, .no-print * {
+    display: none !important;
+  }
+
+  /* 7. Control page breaks to avoid awkward cuts */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  .section-title {
+    background-color: #e5e7eb !important; /* gray-200 */
+    padding: 4px 8px;
+    font-weight: bold;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  ul, ol, table, figure {
+    page-break-inside: avoid;
+  }
+
+  tr {
+    page-break-inside: inherit;
+  }
+
+  p, li {
+    orphans: 3;
+    widows: 3;
+  }
+
+  /* 8. Style table headers for print */
+  thead {
+    background-color: #e5e7eb !important; /* gray-200 */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .printable-content .grid-table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  .printable-content .grid-table th, 
+  .printable-content .grid-table td {
+    border: 1px solid #000;
+    padding: 4px 8px;
+    text-align: left;
+  }
+  .printable-content .grid-table thead th {
+    background-color: #e5e7eb !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 9. Define the page layout */
+  @page {
+    size: A4 portrait;
+    margin: 1.5cm;
+  }
+}
