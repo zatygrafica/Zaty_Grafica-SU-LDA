@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import type { User } from '../types';
 import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
 import { supabaseAdmin } from '../services/supabaseAdminClient';
+import { supabase } from '../services/supabaseClient';
+import { convertKeysToCamelCase } from '../utils/case';
 import { useStore } from './useStore';
 
 type UserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
@@ -50,6 +52,7 @@ interface UserState {
   updateUserById: (id: string, userData: Partial<User>) => Promise<UserOperationResult>;
   toggleUserBlock: (id: string) => Promise<User | undefined>;
   deleteUserById: (id: string) => Promise<void>;
+  subscribeToRealtime: () => () => void;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -216,5 +219,40 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ error: (error as Error).message });
       throw error;
     }
+  },
+
+  subscribeToRealtime: () => {
+    const channel = supabase.channel('profiles-realtime');
+
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'profiles' },
+      (payload) => {
+        const raw = (payload.new ?? payload.old) as Record<string, unknown>;
+        const parsed = convertKeysToCamelCase(raw) as ProfileRecord;
+        if (!parsed?.id) return;
+        const normalized = normalizeUser(mapProfileToUser(parsed));
+
+        set((state) => {
+          if (payload.eventType === 'DELETE') {
+            return {
+              users: state.users.filter((u) => u.id !== normalized.id),
+              hasLoaded: true,
+            };
+          }
+          const exists = state.users.some((u) => u.id === normalized.id);
+          const users = exists
+            ? state.users.map((u) => (u.id === normalized.id ? normalized : u))
+            : [normalized, ...state.users];
+          return { users, hasLoaded: true };
+        });
+      }
+    );
+
+    void channel.subscribe();
+
+    return () => {
+      void channel.unsubscribe();
+    };
   },
 }));

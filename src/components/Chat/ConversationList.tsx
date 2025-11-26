@@ -22,29 +22,32 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
   const [searchTerm, setSearchTerm] = useState('');
 
   const conversationDetails = useMemo(() => {
-    return conversations.map(convo => {
-      const otherUserId = convo.participantIds.find(id => id !== currentUser?.id);
-      const otherUser = users.find(u => u.id === otherUserId);
-      const convoMessages = Object.values(messages).filter(m => m.conversationId === convo.id);
-      const lastMessage = convoMessages.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
-      
-      return {
-        ...convo,
-        otherUser,
-        lastMessage,
-        isOnline: otherUser ? onlineUserIds.includes(otherUser.id) : false,
-      };
-    }).filter(details => details.otherUser); // Filter out convos where the other user might not exist
+    return conversations
+      .map((convo) => {
+        const otherUserId = convo.participantIds.find((id) => id !== currentUser?.id);
+        const otherUser = users.find((u) => u.id === otherUserId);
+        const convoMessages = Object.values(messages).filter((m) => m.conversationId === convo.id);
+        const lastMessage = convoMessages.sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        )[0];
+
+        return {
+          ...convo,
+          otherUser,
+          lastMessage,
+          isOnline: otherUser ? onlineUserIds.includes(otherUser.id) : false,
+        };
+      })
+      .filter((details) => details.otherUser);
   }, [conversations, messages, users, currentUser, onlineUserIds]);
 
-  const filteredUsers = useMemo(() => {
-    if (!searchTerm) return [];
-    return users.filter(user => 
-      user.id !== currentUser?.id &&
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !conversationDetails.some(cd => cd.otherUser?.id === user.id)
-    );
-  }, [users, searchTerm, currentUser, conversationDetails]);
+  const allUsers = useMemo(
+    () =>
+      users
+        .filter((user) => user.id !== currentUser?.id)
+        .filter((user) => user.name.toLowerCase().includes(searchTerm.toLowerCase())),
+    [users, currentUser?.id, searchTerm]
+  );
 
   const handleUserSelect = async (user: UserType) => {
     const convo = await startOrGetConversation(user.id);
@@ -73,25 +76,36 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {searchTerm && filteredUsers.map(user => (
-          <div
-            key={user.id}
-            onClick={() => handleUserSelect(user)}
-            className="p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800/50"
-          >
-            {user.photoUrl ? (
-              <img src={user.photoUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-gray-500" />
+        <div className="border-b border-gray-200 dark:border-neutral-800">
+          {allUsers.map((user) => (
+            <div
+              key={user.id}
+              onClick={() => handleUserSelect(user)}
+              className="p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800/50"
+            >
+              <div className="relative">
+                {user.photoUrl ? (
+                  <img src={user.photoUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-gray-500" />
+                  </div>
+                )}
+                <span
+                  className={clsx(
+                    'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white dark:border-neutral-900',
+                    onlineUserIds.includes(user.id) ? 'bg-green-500' : 'bg-gray-400'
+                  )}
+                  title={onlineUserIds.includes(user.id) ? 'Online' : 'Offline'}
+                />
               </div>
-            )}
-            <div className="flex-1 overflow-hidden">
-              <p className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Iniciar nova conversa</p>
+              <div className="flex-1 overflow-hidden">
+                <p className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Iniciar conversa</p>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
         {conversationDetails.filter(cd => !searchTerm || cd.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())).map(({ id, otherUser, lastMessage, unreadCount, isOnline }) => (
           <div
             key={id}

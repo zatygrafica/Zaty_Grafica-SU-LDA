@@ -21,7 +21,7 @@ import { useIncrementalList } from '../../hooks/useIncrementalList';
 
 const UsersModule: React.FC = () => {
   const { t } = useTranslation();
-  const { users, listUsers, toggleUserBlock, loading, hasLoaded, error: loadError } = useUserStore();
+  const { users, listUsers, toggleUserBlock, loading, hasLoaded, error: loadError, subscribeToRealtime } = useUserStore();
   const { currentUser, startImpersonation, addNotification } = useStore();
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -38,7 +38,9 @@ const UsersModule: React.FC = () => {
     listUsers().catch((error) => {
       console.error('Failed to load users:', error);
     });
-  }, [listUsers]);
+    const unsubscribe = subscribeToRealtime();
+    return () => unsubscribe();
+  }, [listUsers, subscribeToRealtime]);
 
   const isAdmin = currentUser?.role === 'admin';
   const isMobile = useMediaQuery('(max-width: 767px)');
