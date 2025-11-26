@@ -3,7 +3,6 @@ import { convertKeysToCamelCase, convertKeysToSnakeCase } from '../utils/case';
 
 export type ResourceName =
   | 'profiles'
-  | 'users'
   | 'clients'
   | 'orders'
   | 'services'
@@ -37,7 +36,6 @@ export interface DataProvider {
 }
 
 const resourceTableMap: Partial<Record<ResourceName, string>> = {
-  users: 'profiles',
   stockMovements: 'stock_movements',
   salaryPayments: 'salary_payments',
   documentTemplates: 'document_templates',

@@ -1,9 +1,8 @@
 import { create } from 'zustand';
 import type { User } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
 import { supabaseAdmin } from '../services/supabaseAdminClient';
 import { supabase } from '../services/supabaseClient';
-import { convertKeysToCamelCase } from '../utils/case';
+import { convertKeysToCamelCase, convertKeysToSnakeCase } from '../utils/case';
 import { useStore } from './useStore';
 
 type UserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
@@ -61,13 +60,14 @@ export const useUserStore = create<UserState>((set, get) => ({
   hasLoaded: false,
   error: null,
 
-  listUsers: async (force = false) => {
-    if (!force && (get().loading || get().hasLoaded)) {
-      return get().users;
-    }
+  listUsers: async (_force = false) => {
+    if (get().loading) return get().users;
     set({ loading: true, hasLoaded: false, error: null });
     try {
-      const profiles = await dataProvider.list<ProfileRecord>('profiles');
+      // Sempre busca todos os perfis direto do Supabase
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (error) throw error;
+      const profiles = convertKeysToCamelCase((data ?? []) as ProfileRecord[]);
       const normalized = profiles.map((profile) => normalizeUser(mapProfileToUser(profile)));
       set({ users: normalized, loading: false, hasLoaded: true });
       return normalized;
@@ -127,7 +127,11 @@ export const useUserStore = create<UserState>((set, get) => ({
         { onConflict: 'id' }
       );
 
-      const createdProfile = await dataProvider.getById<ProfileRecord>('profiles', authUser.id);
+      const { data: fetchedProfile, error: fetchError } = await supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
+      if (fetchError) throw fetchError;
+      const createdProfile = fetchedProfile
+        ? convertKeysToCamelCase(fetchedProfile as ProfileRecord)
+        : undefined;
       const normalized = createdProfile
         ? normalizeUser(mapProfileToUser(createdProfile))
         : normalizeUser({
@@ -169,11 +173,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     const payload = { ...userData, updatedAt: new Date() };
 
     try {
-      const updated = await dataProvider.update<User>('users', id, payload);
-      if (!updated) {
-        return { success: false, message: 'user_not_found' };
-      }
-      const normalized = normalizeUser(updated);
+      const snakePayload = convertKeysToSnakeCase(payload);
+      const { data, error } = await supabase.from('profiles').update(snakePayload).eq('id', id).select().maybeSingle();
+      if (error) throw error;
+      if (!data) return { success: false, message: 'user_not_found' };
+      const normalized = normalizeUser(mapProfileToUser(convertKeysToCamelCase(data) as ProfileRecord));
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? normalized : user)),
         error: null,
@@ -191,9 +195,11 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!user) return undefined;
     const payload = { isBlocked: !user.isBlocked, updatedAt: new Date() };
     try {
-      const updated = await dataProvider.update<User>('users', id, payload);
-      if (!updated) return undefined;
-      const normalized = normalizeUser(updated);
+      const snakePayload = convertKeysToSnakeCase(payload);
+      const { data, error } = await supabase.from('profiles').update(snakePayload).eq('id', id).select().maybeSingle();
+      if (error) throw error;
+      if (!data) return undefined;
+      const normalized = normalizeUser(mapProfileToUser(convertKeysToCamelCase(data) as ProfileRecord));
       const action = user.isBlocked ? 'unblock' : 'block';
       set((state) => ({
         users: state.users.map((u) => (u.id === id ? normalized : u)),
@@ -209,7 +215,8 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   deleteUserById: async (id) => {
     try {
-      await dataProvider.delete('users', id);
+      await supabaseAdmin.auth.admin.deleteUser(id);
+      await supabaseAdmin.from('profiles').delete().eq('id', id);
       set((state) => ({
         users: state.users.filter((user) => user.id !== id),
         error: null,
@@ -256,3 +263,16 @@ export const useUserStore = create<UserState>((set, get) => ({
     };
   },
 }));
+
+// Bootstrap: ensure users are loaded once on app start and realtime is attached
+let userRealtimeUnsubscribe: (() => void) | null = null;
+const bootstrapUsers = () => {
+  const state = useUserStore.getState();
+  // Load immediately from Supabase profiles
+  void state.listUsers(true).catch((error) => console.error('Failed to load users on bootstrap:', error));
+  // Attach realtime only once
+  if (!userRealtimeUnsubscribe) {
+    userRealtimeUnsubscribe = state.subscribeToRealtime();
+  }
+};
+bootstrapUsers();

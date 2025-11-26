@@ -24,7 +24,7 @@ type UserFormData = Omit<UserType, 'id' | 'createdAt' | 'updatedAt' | 'permissio
 
 const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, user }) => {
   const { t } = useTranslation();
-  const { createUser, updateUserById, users } = useUserStore();
+  const { createUser, updateUserById } = useUserStore();
   const { addNotification } = useStore();
   const [password, setPassword] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -34,7 +34,10 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, user }) => {
 
   const validationSchema = yup.object().shape({
     name: yup.string().required(t('users.form.name_required')),
-    email: yup.string().email().optional().nullable(),
+    email: yup
+      .string()
+      .email(t('users.form.email_invalid', { defaultValue: 'Email inválido' }))
+      .required('E-mail é obrigatório'),
     password: yup.string().when('$isEditing', {
       is: false,
       then: (schema) => schema.required(t('users.form.password_required')).matches(
@@ -110,19 +113,9 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, user }) => {
       }
       result = await updateUserById(user.id, updateData);
     } else {
-      let finalEmail = data.email;
-      if (!finalEmail) {
-        let counter = 1;
-        let generatedEmail;
-        do {
-          generatedEmail = `user${users.length + counter}@zatygrafica.com`;
-          counter++;
-        } while (users.some(u => u.email === generatedEmail));
-        finalEmail = generatedEmail;
-      }
       result = await createUser({
         name: data.name,
-        email: finalEmail,
+        email: data.email,
         password: data.password,
         role: data.role,
         photoUrl: data.photoUrl,
@@ -182,10 +175,11 @@ const UserForm: React.FC<UserFormProps> = ({ isOpen, onClose, user }) => {
           required
         />
         <Input
-          label={t('users.email_optional')}
+          label={t('common.email')}
           type="email"
           {...register('email')}
           error={errors.email?.message}
+          required
         />
         <div>
           <Input
