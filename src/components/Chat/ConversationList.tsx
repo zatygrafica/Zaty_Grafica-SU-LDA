@@ -18,7 +18,7 @@ interface ConversationListProps {
 const ConversationList: React.FC<ConversationListProps> = ({ selectedConversationId, onSelectConversation }) => {
   const { currentUser } = useStore();
   const { users } = useUserStore();
-  const { conversations, messages, startOrGetConversation, soundEnabled, toggleSound } = useChatStore();
+  const { conversations, messages, startOrGetConversation, soundEnabled, toggleSound, onlineUserIds } = useChatStore();
   const [searchTerm, setSearchTerm] = useState('');
 
   const conversationDetails = useMemo(() => {
@@ -32,9 +32,10 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
         ...convo,
         otherUser,
         lastMessage,
+        isOnline: otherUser ? onlineUserIds.includes(otherUser.id) : false,
       };
     }).filter(details => details.otherUser); // Filter out convos where the other user might not exist
-  }, [conversations, messages, users, currentUser]);
+  }, [conversations, messages, users, currentUser, onlineUserIds]);
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm) return [];
@@ -91,7 +92,7 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
             </div>
           </div>
         ))}
-        {conversationDetails.filter(cd => !searchTerm || cd.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())).map(({ id, otherUser, lastMessage, unreadCount }) => (
+        {conversationDetails.filter(cd => !searchTerm || cd.otherUser?.name.toLowerCase().includes(searchTerm.toLowerCase())).map(({ id, otherUser, lastMessage, unreadCount, isOnline }) => (
           <div
             key={id}
             onClick={() => onSelectConversation(id)}
@@ -102,13 +103,22 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
                 : 'border-transparent hover:bg-gray-50 dark:hover:bg-neutral-800/50'
             )}
           >
-            {otherUser?.photoUrl ? (
-              <img src={otherUser.photoUrl} alt={otherUser.name} className="w-10 h-10 rounded-full object-cover" />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
-                <UserIcon className="w-5 h-5 text-gray-500" />
-              </div>
-            )}
+            <div className="relative">
+              {otherUser?.photoUrl ? (
+                <img src={otherUser.photoUrl} alt={otherUser.name} className="w-10 h-10 rounded-full object-cover" />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
+                  <UserIcon className="w-5 h-5 text-gray-500" />
+                </div>
+              )}
+              <span
+                className={clsx(
+                  'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white dark:border-neutral-900',
+                  isOnline ? 'bg-green-500' : 'bg-gray-400'
+                )}
+                title={isOnline ? 'Online' : 'Offline'}
+              />
+            </div>
             <div className="flex-1 overflow-hidden">
               <div className="flex justify-between items-center">
                 <p className="font-semibold text-gray-900 dark:text-white truncate">{otherUser?.name}</p>

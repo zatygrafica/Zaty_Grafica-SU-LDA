@@ -2,10 +2,13 @@ import { create } from 'zustand';
 import type { ChatMessage, Conversation } from '../types';
 import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
 import { useStore } from './useStore';
+import { supabase } from '../services/supabaseClient';
+import { convertKeysToCamelCase } from '../utils/case';
 
 interface ChatState {
   conversations: Conversation[];
   messages: Record<string, ChatMessage>;
+  onlineUserIds: string[];
   soundEnabled: boolean;
   loading: boolean;
   error: string | null;
@@ -16,6 +19,7 @@ interface ChatState {
   startOrGetConversation: (participantId: string) => Promise<Conversation>;
   sendMessage: (conversationId: string, content: string, attachment?: ChatMessage['attachment']) => Promise<ChatMessage | undefined>;
   markConversationAsRead: (conversationId: string) => Promise<void>;
+  subscribeToRealtime: () => () => void;
   toggleSound: () => void;
 }
 
@@ -32,6 +36,7 @@ const normalizeMessage = (message: ChatMessage): ChatMessage => ({
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   messages: {},
+  onlineUserIds: [],
   soundEnabled: true,
   loading: false,
   error: null,
@@ -164,11 +169,120 @@ export const useChatStore = create<ChatState>((set, get) => ({
     });
 
     try {
-      await dataProvider.update('conversations', conversationId, { unreadCount: 0 });
+      await supabase
+        .from('messages')
+        .update({ status: 'read' })
+        .eq('conversation_id', conversationId)
+        .neq('sender_id', currentUser.id)
+        .eq('status', 'sent');
+
+      await supabase
+        .from('conversations')
+        .update({ unread_count: 0 })
+        .eq('id', conversationId);
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
     }
+  },
+
+  subscribeToRealtime: () => {
+    const { currentUser } = useStore.getState();
+    const channel = supabase.channel('chat-realtime', {
+      config: {
+        presence: {
+          key: currentUser?.id ?? 'anonymous',
+        },
+      },
+    });
+
+    const upsertConversation = (conversation: Conversation) => {
+      set((state) => {
+        const others = state.conversations.filter((c) => c.id !== conversation.id);
+        return {
+          conversations: [conversation, ...others].sort(
+            (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
+          ),
+        };
+      });
+    };
+
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'conversations' },
+      (payload) => {
+        const raw = (payload.new ?? payload.old) as Record<string, unknown>;
+        const parsed = convertKeysToCamelCase(raw) as Conversation;
+        if (!parsed?.id) return;
+        const normalized = normalizeConversation(parsed);
+
+        if (payload.eventType === 'DELETE') {
+          set((state) => ({
+            conversations: state.conversations.filter((c) => c.id !== normalized.id),
+          }));
+        } else {
+          upsertConversation(normalized);
+        }
+      }
+    );
+
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'messages' },
+      (payload) => {
+        const raw = (payload.new ?? payload.old) as Record<string, unknown>;
+        const parsed = convertKeysToCamelCase(raw) as ChatMessage;
+        if (!parsed?.id) return;
+        const normalized = normalizeMessage(parsed);
+        const currentUserId = useStore.getState().currentUser?.id;
+
+        set((state) => {
+          const messages = { ...state.messages };
+          if (payload.eventType === 'DELETE') {
+            delete messages[normalized.id];
+            return { messages };
+          }
+
+          messages[normalized.id] = normalized;
+
+          const updatedConversations = state.conversations
+            .map((c) =>
+              c.id === normalized.conversationId
+                ? {
+                    ...c,
+                    lastMessageTimestamp: normalized.timestamp,
+                    unreadCount:
+                      normalized.senderId !== currentUserId && payload.eventType === 'INSERT'
+                        ? c.unreadCount + 1
+                        : c.unreadCount,
+                  }
+                : c
+            )
+            .sort(
+              (a, b) =>
+                new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
+            );
+
+          return { messages, conversations: updatedConversations };
+        });
+      }
+    );
+
+    channel.on('presence', { event: 'sync' }, () => {
+      const presenceState = channel.presenceState();
+      const onlineUserIds = Object.keys(presenceState);
+      set({ onlineUserIds });
+    });
+
+    void channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        void channel.track({ user_id: currentUser?.id ?? 'anonymous' });
+      }
+    });
+
+    return () => {
+      void channel.unsubscribe();
+    };
   },
 
   toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),

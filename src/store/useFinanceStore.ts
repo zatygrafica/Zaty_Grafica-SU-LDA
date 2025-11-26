@@ -26,11 +26,15 @@ interface FinanceState {
   getExpenseById: (id: string) => Expense | undefined;
   createExpense: (expense: ExpenseInput) => Promise<Expense>;
   addExpense: (expense: ExpenseInput) => Promise<Expense>;
+  updateExpenseById: (id: string, expense: Partial<Expense>) => Promise<Expense | undefined>;
+  deleteExpenseById: (id: string) => Promise<void>;
   setSalaryPayments: (payments: SalaryPayment[]) => void;
   listSalaryPayments: () => Promise<SalaryPayment[]>;
   getSalaryPaymentById: (id: string) => SalaryPayment | undefined;
   createSalaryPayment: (payment: SalaryPaymentInput) => Promise<SalaryPayment>;
   addSalaryPayment: (payment: SalaryPaymentInput) => Promise<SalaryPayment>;
+  updateSalaryPaymentById: (id: string, payment: Partial<SalaryPayment>) => Promise<SalaryPayment | undefined>;
+  deleteSalaryPaymentById: (id: string) => Promise<void>;
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
@@ -71,6 +75,33 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   addExpense: async (expenseData) => get().createExpense(expenseData),
+
+  updateExpenseById: async (id, expenseUpdate) => {
+    try {
+      const updated = await dataProvider.update<Expense>('expenses', id, expenseUpdate);
+      if (!updated) return undefined;
+      const normalized = normalizeExpense(updated);
+      set((state) => ({
+        expenses: state.expenses.map((expense) => (expense.id === id ? normalized : expense)),
+      }));
+      return normalized;
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    }
+  },
+
+  deleteExpenseById: async (id) => {
+    try {
+      await dataProvider.delete('expenses', id);
+      set((state) => ({
+        expenses: state.expenses.filter((expense) => expense.id !== id),
+      }));
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    }
+  },
 
   setSalaryPayments: (payments) => set({ salaryPayments: payments }),
 
@@ -119,4 +150,31 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   addSalaryPayment: async (paymentData) => get().createSalaryPayment(paymentData),
+
+  updateSalaryPaymentById: async (id, paymentUpdate) => {
+    try {
+      const updated = await dataProvider.update<SalaryPayment>('salaryPayments', id, paymentUpdate);
+      if (!updated) return undefined;
+      const normalized = normalizeSalaryPayment(updated);
+      set((state) => ({
+        salaryPayments: state.salaryPayments.map((payment) => (payment.id === id ? normalized : payment)),
+      }));
+      return normalized;
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    }
+  },
+
+  deleteSalaryPaymentById: async (id) => {
+    try {
+      await dataProvider.delete('salaryPayments', id);
+      set((state) => ({
+        salaryPayments: state.salaryPayments.filter((payment) => payment.id !== id),
+      }));
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    }
+  },
 }));

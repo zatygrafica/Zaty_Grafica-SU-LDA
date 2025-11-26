@@ -9,13 +9,17 @@ interface MessageListProps {
 }
 
 const MessageList: React.FC<MessageListProps> = ({ conversationId }) => {
-  const { getMessagesForConversation, markConversationAsRead, soundEnabled } = useChatStore();
+  const { getMessagesForConversation, markConversationAsRead, soundEnabled, listMessagesForConversation } = useChatStore();
   const { currentUser } = useStore();
   const messages = getMessagesForConversation(conversationId);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
   const isInitialLoad = useRef(true);
   const prevMessageCount = useRef(messages.length);
+
+  useEffect(() => {
+    void listMessagesForConversation(conversationId);
+  }, [conversationId, listMessagesForConversation]);
 
   useEffect(() => {
     void markConversationAsRead(conversationId);

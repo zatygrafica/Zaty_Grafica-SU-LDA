@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInvoiceStore } from '../../store/useInvoiceStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -11,6 +11,7 @@ import autoTable from 'jspdf-autotable';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import { HoverEffect } from '../ui/hover-effect';
+import { supabase } from '../../services/supabaseClient';
 
 const FinancialModule: React.FC = () => {
   const { t } = useTranslation();
@@ -134,6 +135,40 @@ const FinancialModule: React.FC = () => {
     if (expense.type === 'purchase') return `${t('financial.expense_type_purchase')}: ${expense.description}`;
     return expense.description;
   }
+
+  // Sempre carregar dados do Supabase ao abrir o módulo
+  useEffect(() => {
+    void useInvoiceStore.getState().listInvoices();
+    void useFinanceStore.getState().listExpenses();
+    void useFinanceStore.getState().listSalaryPayments();
+  }, []);
+
+  // Assina realtime para manter as listas sincronizadas sem recarregar
+  useEffect(() => {
+    const channel = supabase.channel('financial-realtime');
+    const refreshInvoices = () => void useInvoiceStore.getState().listInvoices();
+    const refreshExpenses = () => void useFinanceStore.getState().listExpenses();
+    const refreshSalaryPayments = () => void useFinanceStore.getState().listSalaryPayments();
+
+    [
+      { table: 'invoices', handler: refreshInvoices },
+      { table: 'expenses', handler: refreshExpenses },
+      { table: 'salary_payments', handler: refreshSalaryPayments },
+    ].forEach(({ table, handler }) => {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table },
+        () => {
+          handler();
+        }
+      );
+    });
+
+    void channel.subscribe();
+    return () => {
+      void channel.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
