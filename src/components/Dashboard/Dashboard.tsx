@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { useClientStore } from '../../store/useClientStore';
@@ -28,6 +28,7 @@ import SystemAlerts from './SystemAlerts';
 import TopServicesCard from './TopServicesCard';
 import { subDays, isAfter, format, isWithinInterval } from 'date-fns';
 import { pt } from 'date-fns/locale';
+import { supabase } from '../../services/supabaseClient';
 
 interface DashboardProps {
   onModuleChange: (module: string) => void;
@@ -48,6 +49,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onModuleChange }) => {
   const [activeChart, setActiveChart] = useState<'revenue' | 'orders'>('revenue');
 
   const isAdmin = currentUser?.role === 'admin';
+
+  // Carrega dados reais do Supabase assim que o painel monta
+  useEffect(() => {
+    void useOrderStore.getState().listOrders();
+    void useInvoiceStore.getState().listInvoices();
+    void useClientStore.getState().listClients();
+    void useServiceStore.getState().listServices(true);
+    void usePurchaseStore.getState().listPurchases();
+    void useMaterialStore.getState().listMaterials();
+    void useEmployeeStore.getState().listEmployees(true);
+    void useUserStore.getState().listUsers(true);
+  }, []);
+
+  // Atualiza automaticamente via Realtime para INSERT/UPDATE/DELETE
+  useEffect(() => {
+    const channel = supabase.channel('dashboard-realtime');
+    const subscriptions = [
+      { table: 'orders', handler: () => void useOrderStore.getState().listOrders() },
+      { table: 'invoices', handler: () => void useInvoiceStore.getState().listInvoices() },
+      { table: 'clients', handler: () => void useClientStore.getState().listClients() },
+      { table: 'services', handler: () => void useServiceStore.getState().listServices(true) },
+      { table: 'purchases', handler: () => void usePurchaseStore.getState().listPurchases() },
+      { table: 'materials', handler: () => void useMaterialStore.getState().listMaterials() },
+      { table: 'employees', handler: () => void useEmployeeStore.getState().listEmployees(true) },
+      { table: 'profiles', handler: () => void useUserStore.getState().listUsers(true) },
+    ] as const;
+
+    subscriptions.forEach(({ table, handler }) => {
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table },
+        () => {
+          handler();
+        }
+      );
+    });
+
+    void channel.subscribe();
+
+    return () => {
+      void channel.unsubscribe();
+    };
+  }, []);
 
   // --- Percentage Change Calculation ---
   const now = new Date();
