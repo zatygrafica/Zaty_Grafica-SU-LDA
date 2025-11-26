@@ -16,8 +16,11 @@ const MessageHeader: React.FC<MessageHeaderProps> = ({ conversation, onBack }) =
   const { users } = useUserStore();
   const { onlineUserIds } = useChatStore();
 
-  const otherUserId = conversation.participantIds.find(id => id !== currentUser?.id);
-  const otherUser = users.find(u => u.id === otherUserId);
+  const otherUserId =
+    conversation.participantIds.find((id) => id !== currentUser?.id) ||
+    conversation.participantIds[0];
+
+  const otherUser = users.find((u) => u.id === otherUserId);
   const isOnline = otherUserId ? onlineUserIds.includes(otherUserId) : false;
 
   return (
@@ -35,7 +38,9 @@ const MessageHeader: React.FC<MessageHeaderProps> = ({ conversation, onBack }) =
         </div>
       )}
       <div className="ml-3">
-        <h3 className="font-semibold text-gray-900 dark:text-white">{otherUser?.name || 'Usuário Desconhecido'}</h3>
+        <h3 className="font-semibold text-gray-900 dark:text-white">
+          {otherUser?.name || otherUserId || 'Usuário Desconhecido'}
+        </h3>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {isOnline ? 'Online' : 'Offline'}
         </p>

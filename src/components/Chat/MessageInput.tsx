@@ -16,8 +16,8 @@ const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) => {
   const [text, setText] = useState('');
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [attachment, setAttachment] = useState<File | null>(null);
-  const { sendMessage } = useChatStore();
-  const { theme: appTheme } = useStore();
+  const { sendMessage, getConversationById, startOrGetConversation } = useChatStore();
+  const { theme: appTheme, currentUser } = useStore();
 
   const onDrop = (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -33,7 +33,21 @@ const MessageInput: React.FC<MessageInputProps> = ({ conversationId }) => {
   });
 
   const handleSendMessage = async () => {
+    if (!conversationId || !currentUser) return;
     if (text.trim() === '' && !attachment) return;
+
+    // Garante que a conversa exista no Supabase antes de enviar
+    let conversationExists = Boolean(getConversationById(conversationId));
+    if (!conversationExists) {
+      const participantIds = conversationId.split('-').filter(Boolean);
+      const otherUserId = participantIds.find((id) => id !== currentUser.id);
+      if (otherUserId) {
+        const convo = await startOrGetConversation(otherUserId);
+        if (!convo) return;
+        conversationExists = true;
+      }
+    }
+    if (!conversationExists) return;
 
     let attachmentData: ChatAttachment | undefined;
     if (attachment) {

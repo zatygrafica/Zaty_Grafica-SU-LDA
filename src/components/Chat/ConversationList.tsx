@@ -41,18 +41,34 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
       .filter((details) => details.otherUser);
   }, [conversations, messages, users, currentUser, onlineUserIds]);
 
+  const usersWithConversation = useMemo(() => {
+    const set = new Set<string>();
+    conversations.forEach((convo) => {
+      const otherId = convo.participantIds.find((id) => id !== currentUser?.id);
+      if (otherId) set.add(otherId);
+    });
+    return set;
+  }, [conversations, currentUser?.id]);
+
   const allUsers = useMemo(
     () =>
       users
         .filter((user) => user.id !== currentUser?.id)
+        // não duplicar: se já existe conversa com este user, não mostra na lista de iniciar conversa
+        .filter((user) => !usersWithConversation.has(user.id))
         .filter((user) => user.name.toLowerCase().includes(searchTerm.toLowerCase())),
-    [users, currentUser?.id, searchTerm]
+    [users, currentUser?.id, searchTerm, usersWithConversation]
   );
 
   const handleUserSelect = async (user: UserType) => {
-    const convo = await startOrGetConversation(user.id);
-    onSelectConversation(convo.id);
-    setSearchTerm('');
+    if (!currentUser) return;
+    try {
+      const convo = await startOrGetConversation(user.id);
+      onSelectConversation(convo.id);
+      setSearchTerm('');
+    } catch (error) {
+      console.error('Failed to start conversation', error);
+    }
   };
 
   const renderLastMessage = (msg: ChatMessage | undefined) => {

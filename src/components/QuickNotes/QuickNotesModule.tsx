@@ -14,7 +14,7 @@ import ConfirmationModal from '../Common/ConfirmationModal';
 // Main Component
 const QuickNotesModule: React.FC = () => {
   const { t } = useTranslation();
-  const { notes, addNote, updateNote, deleteNote, toggleFavorite } = useNotesStore();
+  const { notes, addNote, updateNote, deleteNote, toggleFavorite, listNotes, subscribeToRealtime } = useNotesStore();
   
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(notes.length > 0 ? notes[0].id : null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -35,6 +35,12 @@ const QuickNotesModule: React.FC = () => {
         note.content.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [notes, searchTerm]);
+
+  useEffect(() => {
+    void listNotes(true);
+    const unsubscribe = subscribeToRealtime();
+    return () => unsubscribe();
+  }, [listNotes, subscribeToRealtime]);
 
   useEffect(() => {
     if (!selectedNoteId && filteredNotes.length > 0) {
