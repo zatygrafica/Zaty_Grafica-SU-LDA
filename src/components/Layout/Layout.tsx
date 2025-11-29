@@ -26,6 +26,7 @@ const TasksModule = lazy(() => import('../Tasks/TasksModule'));
 const QuickNotesModule = lazy(() => import('../QuickNotes/QuickNotesModule'));
 const ChatModule = lazy(() => import('../Chat/ChatModule'));
 const AuditModule = lazy(() => import('../Audit/AuditModule'));
+const PassportPhotoModule = lazy(() => import('../Photos/PassportPhotoModule'));
 
 interface LayoutProps {
   canInstallPWA: boolean;
@@ -105,6 +106,8 @@ const Layout: React.FC<LayoutProps> = ({ canInstallPWA, onInstallPWA }) => {
         return <ReportsModule />;
       case 'audit':
         return <AuditModule />;
+      case 'passport_photos':
+        return <PassportPhotoModule />;
       case 'settings':
         return <SettingsModule />;
       default:

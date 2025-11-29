@@ -240,11 +240,13 @@ export interface SalaryPayment {
   employeeName: string;
   amount: number;
   date: Date;
+  paidAt?: Date;
   month: number;
   year: number;
   deductions: number;
   grossSalary: number;
   method: PaymentMethod;
+  createdBy?: string;
   createdAt: Date;
 }
 

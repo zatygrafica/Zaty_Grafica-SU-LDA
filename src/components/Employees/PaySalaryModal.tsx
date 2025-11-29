@@ -5,10 +5,12 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { format } from 'date-fns';
 
-import { Employee } from '../../types';
+import { Employee, NotificationType } from '../../types';
 import { useAttendanceStore } from '../../store/useAttendanceStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { useStore } from '../../store/useStore';
+import { useEmployeeStore } from '../../store/useEmployeeStore';
+import { generateId } from '../../utils/id';
 
 import Modal from '../Common/Modal';
 import Button from '../Common/Button';
@@ -25,16 +27,23 @@ const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ isOpen, onClose, employ
   const { t } = useTranslation();
   const { getEventsForMonth } = useAttendanceStore();
   const { createSalaryPayment } = useFinanceStore();
-  const { settings } = useStore();
-  
+  const { getEmployeeById } = useEmployeeStore();
+  const { settings, addNotification } = useStore((state) => ({
+    settings: state.settings,
+    addNotification: state.addNotification,
+  }));
+
   const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [duplicateInfo, setDuplicateInfo] = useState<string | null>(null);
+
+  const currentEmployee = useMemo(() => getEmployeeById(employee.id) ?? employee, [employee, getEmployeeById]);
 
   const monthEvents = useMemo(() => {
-    return getEventsForMonth(employee.id, selectedMonth);
-  }, [getEventsForMonth, employee.id, selectedMonth]);
+    return getEventsForMonth(currentEmployee.id, selectedMonth);
+  }, [getEventsForMonth, currentEmployee.id, selectedMonth]);
 
   const totalDeductions = monthEvents.reduce((sum, event) => sum + event.deduction, 0);
-  const grossSalary = employee.salary || 0;
+  const grossSalary = currentEmployee.salary || 0;
   const netSalary = grossSalary - totalDeductions;
 
   const validationSchema = yup.object().shape({
@@ -46,19 +55,64 @@ const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ isOpen, onClose, employ
     defaultValues: { method: 'transfer' as const },
   });
 
-  const onSubmit = async (data: { method: 'cash' | 'transfer' | 'mobile_money' }) => {
-    await createSalaryPayment({
-      employeeId: employee.id,
-      employeeName: employee.name,
-      amount: netSalary,
-      date: new Date(),
-      month: selectedMonth.getMonth(),
-      year: selectedMonth.getFullYear(),
-      deductions: totalDeductions,
-      grossSalary,
-      method: data.method,
+  const notify = (type: NotificationType, baseMessage: string, detail?: string) => {
+    const fullMessage = detail ? `${baseMessage} ${detail}` : baseMessage;
+    addNotification({
+      id: generateId(),
+      type,
+      title: type === 'error' ? t('common.error') : t('common.success'),
+      message: fullMessage,
+      read: false,
+      createdAt: new Date(),
     });
-    onClose();
+  };
+
+  const onSubmit = async (data: { method: 'cash' | 'transfer' | 'mobile_money' }) => {
+    setDuplicateInfo(null);
+    if (netSalary <= 0) {
+      notify('error', t('common.error'), 'Valor de pagamento inválido');
+      return;
+    }
+
+    try {
+      await createSalaryPayment({
+        employeeId: currentEmployee.id,
+        employeeName: currentEmployee.name,
+        amount: netSalary,
+        date: new Date(),
+        month: selectedMonth.getMonth(),
+        year: selectedMonth.getFullYear(),
+        deductions: totalDeductions,
+        grossSalary,
+        method: data.method,
+      });
+      notify('success', 'Pagamento registrado com sucesso');
+      onClose();
+    } catch (error) {
+      const message = (error as Error).message;
+      if (message?.toLowerCase().includes('já possui pagamento')) {
+        notify('error', 'Funcionário já recebeu salário neste mês.');
+        const eventLines = monthEvents
+          .filter((e) => e.deduction > 0)
+          .map((e) => {
+            const label = e.type === 'absence' ? t('employees.absences_short') : t('employees.delays_short');
+            const date = format(new Date(e.date), 'dd/MM');
+            return `- ${date}: ${label} (${e.deduction.toFixed(2)} ${settings.currency})`;
+          })
+          .join('\n');
+        setDuplicateInfo(
+          [
+            `Período: ${format(selectedMonth, 'MM/yyyy')}`,
+            `Salário bruto: ${grossSalary.toFixed(2)} ${settings.currency}`,
+            `Total descontos: ${totalDeductions.toFixed(2)} ${settings.currency}`,
+            `Salário líquido: ${netSalary.toFixed(2)} ${settings.currency}`,
+            eventLines ? `Detalhe dos descontos:\n${eventLines}` : 'Sem descontos aplicados.',
+          ].join('\n')
+        );
+      } else {
+        notify('error', t('common.error'), message);
+      }
+    }
   };
   
   const methodOptions = [
@@ -67,9 +121,20 @@ const PaySalaryModal: React.FC<PaySalaryModalProps> = ({ isOpen, onClose, employ
     { value: 'mobile_money', label: t('payments.methods.mobile_money') },
   ];
 
+  const rawTitle = t('employees.pay_salary_for', { name: currentEmployee.name });
+  const title = rawTitle.includes('{name}')
+    ? rawTitle.replace('{name}', currentEmployee.name ?? '')
+    : rawTitle;
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('employees.pay_salary_for', { name: employee.name })} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {duplicateInfo && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-4 text-sm whitespace-pre-line text-center">
+            <p className="font-semibold mb-2">Funcionário já pago neste mês</p>
+            <p>{duplicateInfo}</p>
+          </div>
+        )}
         <div>
           <label className="form-label">{t('employees.payment_month')}</label>
           <Input

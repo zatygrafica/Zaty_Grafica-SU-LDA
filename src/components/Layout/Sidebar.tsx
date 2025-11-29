@@ -20,7 +20,8 @@ import {
   MessageCircle,
   DownloadCloud,
   X,
-  BookUser
+  BookUser,
+  Image as ImageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SidebarToggleIcon from './SidebarToggleIcon';
@@ -61,6 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, isMobil
     { id: 'documents', icon: FileEdit, label: t('navigation.documents') },
     { id: 'tasks', icon: ClipboardCheck, label: t('navigation.tasks'), shortcut: 'T' },
     { id: 'quick_notes', icon: StickyNote, label: t('navigation.quick_notes'), shortcut: 'N' },
+    { id: 'passport_photos', icon: ImageIcon, label: t('navigation.passport_photos') },
   ];
 
   const footerMenuItems = [

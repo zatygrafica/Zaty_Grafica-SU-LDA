@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInvoiceStore } from '../../store/useInvoiceStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -21,6 +21,7 @@ const FinancialModule: React.FC = () => {
 
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const setDateRange = (preset: '7days' | '30days' | 'thisMonth') => {
     const today = new Date();
@@ -45,9 +46,12 @@ const FinancialModule: React.FC = () => {
   }, [invoices, startDate, endDate, currentUser]);
 
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
+    return expenses.filter((expense) => {
       const expenseDate = new Date(expense.date);
-      const isUserExpense = currentUser?.role !== 'admin' ? expense.createdBy === currentUser?.id : true;
+      const isUserExpense =
+        currentUser?.role !== 'admin'
+          ? expense.createdBy === currentUser?.id || expense.createdBy === null || expense.createdBy === undefined
+          : true;
       return expenseDate >= startDate && expenseDate <= endOfMonth(endDate) && isUserExpense;
     });
   }, [expenses, startDate, endDate, currentUser]);
@@ -136,19 +140,25 @@ const FinancialModule: React.FC = () => {
     return expense.description;
   }
 
+  const safeRefresh = (fn: () => Promise<unknown>, label: string) =>
+    fn().catch((error) => {
+      console.error(`Falha ao sincronizar ${label}:`, error);
+      setSyncError(`Falha ao sincronizar ${label}. Verifique a conexão e tente novamente.`);
+    });
+
   // Sempre carregar dados do Supabase ao abrir o módulo
   useEffect(() => {
-    void useInvoiceStore.getState().listInvoices();
-    void useFinanceStore.getState().listExpenses();
-    void useFinanceStore.getState().listSalaryPayments();
+    safeRefresh(() => useInvoiceStore.getState().listInvoices(), 'faturas');
+    safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas');
+    safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salário');
   }, []);
 
   // Assina realtime para manter as listas sincronizadas sem recarregar
   useEffect(() => {
     const channel = supabase.channel('financial-realtime');
-    const refreshInvoices = () => void useInvoiceStore.getState().listInvoices();
-    const refreshExpenses = () => void useFinanceStore.getState().listExpenses();
-    const refreshSalaryPayments = () => void useFinanceStore.getState().listSalaryPayments();
+    const refreshInvoices = () => safeRefresh(() => useInvoiceStore.getState().listInvoices(), 'faturas');
+    const refreshExpenses = () => safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas');
+    const refreshSalaryPayments = () => safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salário');
 
     [
       { table: 'invoices', handler: refreshInvoices },
@@ -164,7 +174,12 @@ const FinancialModule: React.FC = () => {
       );
     });
 
-    void channel.subscribe();
+    void channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') setSyncError(null);
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        setSyncError('Sincronização financeira interrompida. Tentando reconectar...');
+      }
+    });
     return () => {
       void channel.unsubscribe();
     };
@@ -247,7 +262,7 @@ const FinancialModule: React.FC = () => {
                 {filteredExpenses.length > 0 ? filteredExpenses.map(exp => (
                   <tr key={exp.id} className="hover:bg-gray-500/10">
                     <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{format(new Date(exp.date), 'dd/MM/yy')}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{getExpenseDescription(exp)}</td>
+                  <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{getExpenseDescription(exp)}</td>
                     <td className="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-gray-100">{exp.amount.toFixed(2)}</td>
                   </tr>
                 )) : (
@@ -263,3 +278,16 @@ const FinancialModule: React.FC = () => {
 };
 
 export default FinancialModule;
+
+
+
+
+
+
+
+
+
+
+
+
+

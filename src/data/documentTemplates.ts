@@ -6,31 +6,23 @@ const rawTemplates: DocumentTemplate[] = [
     name: 'Currículo Vitae',
     type: 'client',
     template: `
-      <div class="text-sm leading-normal">
-        <h1 class="text-xl font-bold text-center tracking-widest mb-6">CURRICULUM VITAE</h1>
+      <div class="text-sm leading-normal cv-doc">
+        <h1 class="cv-title text-center">CURRICULUM VITAE</h1>
         <div class="section-container" data-section-id="personal_data">
           <h2 class="section-title">I. IDENTIFICAÇÃO</h2>
-          <table class="w-full">
+          <table class="w-full ident-table">
             <tbody>
-              <tr><td class="font-bold pr-4 w-1/4">Apelido:</td><td>{{apelido}}</td></tr>
-              <tr><td class="font-bold pr-4">Nome:</td><td>{{nome}}</td></tr>
-              <tr><td class="font-bold pr-4">Idade:</td><td>{{idade}}</td></tr>
-              <tr><td class="font-bold pr-4">Estado Civil:</td><td>{{estado_civil}}</td></tr>
-              <tr><td class="font-bold pr-4">Nacionalidade:</td><td>{{nacionalidade}}</td></tr>
-              <tr><td class="font-bold pr-4">B.I. Nº:</td><td>{{bi}}</td></tr>
-              <tr>
-                <td class="font-bold pr-4 align-top">Contactos:</td>
-                <td>
-                  <p class="font-bold">Endereço físico:</p>
-                  <div class="pl-4">{{endereco}}</div>
-                  <p class="font-bold mt-2">Telemóvel:</p>
-                  <div class="pl-4">{{telemovel}}</div>
-                  <div data-field-id="email_block">
-                    <p class="font-bold mt-2">E-mail:</p>
-                    <div class="pl-4">{{email}}</div>
-                  </div>
-                </td>
-              </tr>
+              <tr><td class="label">Apelido:</td><td>{{apelido}}</td></tr>
+              <tr><td class="label">Nome Completo:</td><td>{{nome}}</td></tr>
+              <tr><td class="label">Filiação:</td><td>{{filiacao}}</td></tr>
+              <tr><td class="label">B.I. no:</td><td>{{bi}}</td></tr>
+              <tr><td class="label">Data de Nascimento:</td><td>{{data_nascimento}}</td></tr>
+              <tr><td class="label">Estado Civil:</td><td>{{estado_civil}}</td></tr>
+              <tr><td class="label">Naturalidade:</td><td>{{naturalidade}}</td></tr>
+              <tr><td class="label">Nacionalidade:</td><td>{{nacionalidade}}</td></tr>
+              <tr><td class="label">Residência:</td><td>{{residencia}}</td></tr>
+              <tr><td class="label">Número de Telefone:</td><td>{{telemovel}}</td></tr>
+              <tr style="{{email_display}}"><td class="label">Email:</td><td>{{email}}</td></tr>
             </tbody>
           </table>
         </div>
@@ -40,11 +32,11 @@ const rawTemplates: DocumentTemplate[] = [
         </div>
         <div class="section-container" data-section-id="professional_training">
           <h2 class="section-title">III. FORMAÇÃO PROFISSIONAL</h2>
-          <ul class="list-disc pl-6 space-y-1">{{professional_training_list}}</ul>
+          <ul class="list-plain">{{professional_training_list}}</ul>
         </div>
         <div class="section-container" data-section-id="experience">
           <h2 class="section-title">IV. EXPERIÊNCIA PROFISSIONAL</h2>
-          <ul class="list-disc pl-6 space-y-3">{{experience_list}}</ul>
+          <ul class="list-plain">{{experience_list}}</ul>
         </div>
         <div class="section-container" data-section-id="it_skills">
           <h2 class="section-title">V. INFORMÁTICA</h2>
@@ -80,15 +72,17 @@ const rawTemplates: DocumentTemplate[] = [
     fields: [
       { name: 'section_personal_data', label: 'I. IDENTIFICAÇÃO', type: 'section_toggle', defaultValue: 'true' },
       { name: 'apelido', label: 'Apelido', type: 'text', required: true, sectionId: 'personal_data' },
-      { name: 'nome', label: 'Nome', type: 'text', required: true, sectionId: 'personal_data' },
-      { name: 'idade', label: 'Idade', type: 'text', sectionId: 'personal_data' },
+      { name: 'nome', label: 'Nome Completo', type: 'text', required: true, sectionId: 'personal_data' },
+      { name: 'filiacao', label: 'Filiação', type: 'text', sectionId: 'personal_data' },
+      { name: 'bi', label: 'B.I. no', type: 'text', sectionId: 'personal_data' },
+      { name: 'data_nascimento', label: 'Data de Nascimento', type: 'text', sectionId: 'personal_data' },
       { name: 'estado_civil', label: 'Estado Civil', type: 'text', sectionId: 'personal_data' },
+      { name: 'naturalidade', label: 'Naturalidade', type: 'text', sectionId: 'personal_data' },
       { name: 'nacionalidade', label: 'Nacionalidade', type: 'text', defaultValue: 'Moçambicana', sectionId: 'personal_data' },
-      { name: 'bi', label: 'B.I. Nº', type: 'text', sectionId: 'personal_data' },
-      { name: 'endereco', label: 'Endereço Físico', type: 'textarea', sectionId: 'personal_data' },
-      { name: 'telemovel', label: 'Telemóvel', type: 'text', sectionId: 'personal_data' },
-      { name: 'show_email', label: 'Exibir E-mail', type: 'section_toggle', defaultValue: 'true', sectionId: 'personal_data' },
-      { name: 'email', label: 'E-mail', type: 'email', sectionId: 'personal_data', dependsOn: 'show_email' },
+      { name: 'residencia', label: 'Residência', type: 'text', sectionId: 'personal_data' },
+      { name: 'telemovel', label: 'Número de Telefone', type: 'text', sectionId: 'personal_data' },
+      { name: 'show_email', label: 'Exibir Email', type: 'section_toggle', defaultValue: 'true', sectionId: 'personal_data' },
+      { name: 'email', label: 'Email', type: 'email', sectionId: 'personal_data' },
       { name: 'section_education', label: 'II. FORMAÇÃO ACADÉMICA', type: 'section_toggle', defaultValue: 'true' },
       {
         name: 'education_list',
@@ -114,7 +108,24 @@ const rawTemplates: DocumentTemplate[] = [
         options: ['Microsoft Office Word', 'Microsoft Office Excel', 'Microsoft Access (Básico) e SPSS', 'Microsoft Office PowerPoint', 'Internet'],
       },
       { name: 'section_languages', label: 'VI. LÍNGUAS', type: 'section_toggle', defaultValue: 'true' },
-      { name: 'languages', label: 'Idiomas', type: 'language_grid', sectionId: 'languages' },
+      {
+        name: 'languages',
+        label: 'Idiomas',
+        type: 'repeatable',
+        sectionId: 'languages',
+        subFields: [
+          {
+            name: 'idioma',
+            label: 'Idioma',
+            type: 'select',
+            options: ['Português', 'Inglês', 'Francês', 'Chinês', 'Espanhol', 'Macua'],
+          },
+          { name: 'leitura', label: 'Leitura', type: 'select', options: ['Excelente', 'Razoável'] },
+          { name: 'fala', label: 'Fala', type: 'select', options: ['Excelente', 'Razoável'] },
+          { name: 'escrita', label: 'Escrita', type: 'select', options: ['Excelente', 'Razoável'] },
+        ],
+      },
+      // substitute language_grid by repeatable with selects
       { name: 'section_social_skills', label: 'VII. APTIDÕES E COMPETÊNCIAS SOCIAIS', type: 'section_toggle', defaultValue: 'true' },
       {
         name: 'social_skills_list',
@@ -144,16 +155,22 @@ const rawTemplates: DocumentTemplate[] = [
     name: 'Declaração Simples de Empréstimo',
     type: 'client',
     template: `
-      <div class="leading-normal">
-        <h1 class="text-xl font-bold text-center mb-10">DECLARAÇÃO</h1>
+      <div class="leading-normal formal-doc" style="line-height:1.3;">
+        <h1 class="text-xl font-bold text-center mb-6">DECLARAÇÃO</h1>
         <p class="mb-6 text-justify">Eu, <strong>{{NOME_DECLARANTE}}</strong><span data-field-id="declarante_bi_block">, portador do BI nº <strong>{{NUM_BI_DECLARANTE}}</strong></span>, residente em {{ENDERECO_DECLARANTE}}, <strong>DECLARO</strong> para os devidos efeitos que solicitei junto à empresa <strong>{{NOME_EMPRESA}}</strong> um empréstimo no valor de <strong>{{VALOR_EXTENSO}} ({{VALOR_NUM}} MZN)</strong>.</p>
         <p class="mb-6 text-justify">Fica estabelecido que o reembolso será efetuado em prestações mensais no valor de <strong>{{VALOR_PRESTACAO_EXTENSO}} ({{VALOR_PRESTACAO}} MZN)</strong>, com início no mês de <strong>{{MES_ANO_INICIO}}</strong>, conforme acordo celebrado entre as partes.</p>
         <p class="mb-10 text-justify">Mais declaro estar ciente das condições assumidas e <strong>COMPROMETO-ME</strong> a cumprir rigorosamente com o pagamento até à <strong>liquidação total</strong> da dívida.</p>
-        <p class="mb-10 text-justify">Por ser verdade e me ter sido solicitado, firmo a presente declaração.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
-        <div class="flex justify-between text-center mt-24">
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">(Declarante)</p></div>
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">(Representante da Empresa)</p></div>
+        <p class="mb-8 text-justify">Por ser verdade e me ter sido solicitado, firmo a presente declaração.</p>
+        <p class="text-center signature-block mb-10"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span>.</p>
+        <div class="signature-wrapper mt-12">
+          <div class="signature-line">
+            <p>Assinatura do Empregado</p>
+            <hr />
+          </div>
+          <div class="signature-line">
+            <p>Assinatura do Empregador</p>
+            <hr />
+          </div>
         </div>
       </div>
     `,
@@ -181,16 +198,22 @@ const rawTemplates: DocumentTemplate[] = [
     name: 'Declaração de Empréstimo — Empregado/Patrão',
     type: 'client',
     template: `
-      <div class="leading-normal">
-        <h1 class="text-xl font-bold text-center mb-10">DECLARAÇÃO DE EMPRÉSTIMO</h1>
+      <div class="leading-normal formal-doc" style="line-height:1.3;">
+        <h1 class="text-xl font-bold text-center mb-6">DECLARAÇÃO DE EMPRÉSTIMO</h1>
         <p class="mb-6 text-justify">Eu, <strong>{{NOME_EMPREGADO}}</strong>, de nacionalidade moçambicana<span data-field-id="empregado_bi_block">, portador do BI nº <strong>{{NUM_BI_EMPREGADO}}</strong>, emitido em {{LOCAL_EMISSAO_BI}} em <strong>{{DATA_EMISSAO_BI}}</strong></span>, residente no bairro {{BAIRRO_EMPREGADO}}, <strong>DECLARO</strong> para os devidos efeitos que solicitei ao meu empregador, <strong>{{NOME_PATRÃO}}</strong>, um empréstimo no valor de <strong>{{VALOR_EXTENSO}} Meticais ({{VALOR_NUM}} MZN)</strong>.</p>
         <p class="mb-6 text-justify">O referido valor será utilizado para fins pessoais e <strong>COMPROMETO-ME</strong> a reembolsá-lo <strong>integralmente</strong>, em prestações mensais no valor de <strong>{{VALOR_PRESTACAO}} Meticais</strong>, com início no mês de <strong>{{MES_ANO_INICIO}}</strong>, até à <strong>liquidação total</strong> do montante emprestado.</p>
-        <p class="mb-10 text-justify">Declaro ainda estar ciente e de acordo com os termos estabelecidos.</p>
-        <p class="mb-10 text-justify">Por ser verdade, firmo a presente declaração.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
-        <div class="flex justify-between text-center mt-24">
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Empregado</p></div>
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Empregador</p></div>
+        <p class="mb-6 text-justify">Declaro ainda estar ciente e de acordo com os termos estabelecidos.</p>
+        <p class="mb-8 text-justify">Por ser verdade, firmo a presente declaração.</p>
+        <p class="text-center signature-block mb-10"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span>.</p>
+        <div class="signature-wrapper mt-12">
+          <div class="signature-line">
+            <p>Assinatura do Empregado</p>
+            <hr />
+          </div>
+          <div class="signature-line">
+            <p>Assinatura do Empregador</p>
+            <hr />
+          </div>
         </div>
       </div>
     `,
@@ -224,10 +247,16 @@ const rawTemplates: DocumentTemplate[] = [
         <p class="mb-6 text-justify">Eu, <strong>{{NOME_CREDOR}}</strong><span data-field-id="credor_doc_block">, portador do {{TIPO_DOC_CREDOR}} nº <strong>{{NUM_DOC_CREDOR}}</strong></span>, residente em {{ENDERECO_CREDOR}}, <strong>DECLARO</strong> que emprestei a <strong>{{NOME_DEVEDOR}}</strong><span data-field-id="devedor_doc_block">, portador do {{TIPO_DOC_DEVEDOR}} nº <strong>{{NUM_DOC_DEVEDOR}}</strong></span>, residente em {{ENDERECO_DEVEDOR}}, a quantia de <strong>{{VALOR_EXTENSO}} Meticais ({{VALOR_NUM}} MZN)</strong>.</p>
         <p class="mb-6 text-justify">Fica acordado que o montante será devolvido <strong>integralmente</strong> no dia <strong>{{DATA_PAGAMENTO}}</strong>, sem parcelamento.</p>
         <p class="mb-10 text-justify">Mais declaro que ambas as partes estão cientes e de acordo.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
-        <div class="flex justify-between text-center mt-24">
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Devedor</p></div>
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Credor</p></div>
+        <p class="text-center signature-block mb-10"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span></p>
+        <div class="signature-wrapper mt-16">
+          <div class="signature-line">
+            <p>Assinatura do Devedor</p>
+            <hr />
+          </div>
+          <div class="signature-line">
+            <p>Assinatura do Credor</p>
+            <hr />
+          </div>
         </div>
       </div>
     `,
@@ -258,16 +287,22 @@ const rawTemplates: DocumentTemplate[] = [
     name: 'Declaração de Empréstimo com Garantia',
     type: 'client',
     template: `
-      <div class="leading-normal">
-        <h1 class="text-xl font-bold text-center mb-10">DECLARAÇÃO DE EMPRÉSTIMO COM GARANTIA</h1>
-        <p class="mb-6 text-justify">Eu, <strong>{{NOME_DEVEDOR}}</strong><span data-field-id="devedor_doc_block">, portador do {{TIPO_DOC_DEVEDOR}} nº <strong>{{NUM_DOC_DEVEDOR}}</strong></span>, residente em {{ENDERECO_DEVEDOR}}, <strong>DECLARO</strong> que recebi de <strong>{{NOME_CREDOR}}</strong><span data-field-id="credor_doc_block">, portador do {{TIPO_DOC_CREDOR}} nº <strong>{{NUM_DOC_CREDOR}}</strong></span>, residente em {{ENDERECO_CREDOR}}, a quantia de <strong>{{VALOR_EXTENSO}} Meticais ({{VALOR_NUM}} MZN)</strong>.</p>
-        <p class="mb-6 text-justify">Fica acordado que o valor será devolvido até o dia <strong>{{DATA_PAGAMENTO}}</strong>.</p>
-        <p class="mb-6 text-justify">Como forma de <strong>GARANTIA</strong>, coloco à disposição o bem:<br/><strong>{{DESCRICAO_BEM}}</strong></p>
-        <p class="mb-10 text-justify">Em caso de incumprimento, o credor fica autorizado a confiscar o referido bem como compensação.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
-        <div class="flex justify-between text-center mt-24">
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Devedor</p></div>
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Credor</p></div>
+      <div class="formal-doc" style="line-height:1.3;">
+        <h1 class="text-xl font-bold text-center mb-6">DECLARAÇÃO DE EMPRÉSTIMO COM GARANTIA</h1>
+        <p class="mb-4 text-justify">Eu, <strong>{{NOME_DEVEDOR}}</strong><span data-field-id="devedor_doc_block">, portador do {{TIPO_DOC_DEVEDOR}} nº <strong>{{NUM_DOC_DEVEDOR}}</strong></span>, residente em {{ENDERECO_DEVEDOR}}, <strong>DECLARO</strong> que recebi de <strong>{{NOME_CREDOR}}</strong><span data-field-id="credor_doc_block">, portador do {{TIPO_DOC_CREDOR}} nº <strong>{{NUM_DOC_CREDOR}}</strong></span>, residente em {{ENDERECO_CREDOR}}, a quantia de <strong>{{VALOR_EXTENSO}} Meticais ({{VALOR_NUM}} MZN)</strong>.</p>
+        <p class="mb-4 text-justify">Fica acordado que o valor será devolvido até o dia <strong>{{DATA_PAGAMENTO}}</strong>.</p>
+        <p class="mb-4 text-justify">Como forma de <strong>GARANTIA</strong>, coloco à disposição o bem: <strong>{{DESCRICAO_BEM}}</strong>.</p>
+        <p class="mb-6 text-justify">Em caso de incumprimento, o credor fica autorizado a confiscar o referido bem como compensação.</p>
+        <p class="signature-block mb-6"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span></p>
+        <div class="signature-wrapper mt-12">
+          <div class="signature-line">
+            <p>Assinatura do Devedor</p>
+            <hr />
+          </div>
+          <div class="signature-line">
+            <p>Assinatura do Credor</p>
+            <hr />
+          </div>
         </div>
       </div>
     `,
@@ -304,10 +339,16 @@ const rawTemplates: DocumentTemplate[] = [
         <p class="mb-6 text-justify">Eu, <strong>{{NOME_COMPRADOR}}</strong><span data-field-id="comprador_doc_block">, portador do {{TIPO_DOC_COMPRADOR}} nº <strong>{{NUM_DOC_COMPRADOR}}</strong></span>, residente em {{ENDERECO_COMPRADOR}}, <strong>DECLARO</strong> que adquiri de <strong>{{NOME_VENDEDOR}}</strong><span data-field-id="vendedor_doc_block">, portador do {{TIPO_DOC_VENDEDOR}} nº <strong>{{NUM_DOC_VENDEDOR}}</strong></span>, residente em {{ENDERECO_VENDEDOR}}, o seguinte bem/serviço: <strong>{{DESCRICAO_BEM_SERVICO}}</strong>, pelo valor total de <strong>{{VALOR_EXTENSO}} Meticais ({{VALOR_NUM}} MZN)</strong>.</p>
         <p class="mb-6 text-justify">Até à presente data, já efetuei o pagamento de <strong>{{VALOR_PAGO}} MZN</strong>, restando em aberto <strong>{{VALOR_FALTA}} MZN</strong>.</p>
         <p class="mb-10 text-justify"><strong>COMPROMETO-ME</strong> a liquidar o valor em falta até o dia <strong>{{DATA_PAGAMENTO}}</strong>.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
-        <div class="flex justify-between text-center mt-24">
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Comprador</p></div>
-          <div class="w-1/2"><p class="border-t border-black mx-8 pt-2">Assinatura do Vendedor</p></div>
+        <p class="text-center signature-block mb-10"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span></p>
+        <div class="signature-wrapper mt-16">
+          <div class="signature-line">
+            <p>Assinatura do Comprador</p>
+            <hr />
+          </div>
+          <div class="signature-line">
+            <p>Assinatura do Vendedor</p>
+            <hr />
+          </div>
         </div>
       </div>
     `,
@@ -352,7 +393,7 @@ const rawTemplates: DocumentTemplate[] = [
           <li>Nunca fui penalizado(a) por crime que desonrasse minha reputação ou por qualquer outro delito claramente incompatível com o exercício de funções públicas.</li>
         </ol>
         <p class="mb-10 text-justify">Para que se firme a verdade, assino a presente declaração e assumo a responsabilidade da informação prestada, sob as penas da Lei.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
+        <p class="text-center signature-block mb-10"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span>.</p>
         <div class="text-center mt-24">
           <p class="border-t border-black w-2/3 mx-auto pt-2">(Assinatura)</p>
           <p>(<strong>{{NOME_COMPLETO}}</strong>)</p>
@@ -388,7 +429,7 @@ const rawTemplates: DocumentTemplate[] = [
         <p class="mb-10">= <strong>{{LOCAL}}</strong> =</p>
         <p class="mb-6 text-justify">Eu, <strong>{{NOME_COMPLETO}}</strong>, filho(a) de <strong>{{NOME_PAI}}</strong> e de <strong>{{NOME_MAE}}</strong>, natural de <strong>{{NATURALIDADE}}</strong><span data-field-id="bi_block">, portador(a) do B.I nº <strong>{{NUM_BI}}</strong>, emitido em <strong>{{LOCAL_EMISSAO}}</strong> aos <strong>{{DATA_EMISSAO}}</strong></span>, venho por meio desta requerer a V. Excia. se digne autorizar a minha admissão no concurso de ingresso na carreira de <strong>{{CARGO}}</strong>, nos termos do artigo 8 do REGFAE, aprovado pelo Decreto nº 32/2023, de 8 de Junho, a que se refere o aviso publicado no Jornal Notícias, no dia <strong>{{DATA_PUBLICACAO}}</strong>, e afixado na vitrina do <strong>{{INSTITUICAO}}</strong> em igual data.</p>
         <p class="mb-10">Pede deferimento.</p>
-        <p class="text-center mb-16">{{LOCAL}}, <strong>{{DATA}}</strong>.</p>
+        <p class="text-center signature-block mb-10"><span class="local">{{LOCAL}}</span>, <span class="data">{{DATA}}</span>.</p>
         <div class="text-center mt-24">
           <p class="border-t border-black w-2/3 mx-auto pt-2">(Assinatura)</p>
           <p>(<strong>{{NOME_COMPLETO}}</strong>)</p>
@@ -693,3 +734,9 @@ const rawTemplates: DocumentTemplate[] = [
 
 export const documentTemplates = rawTemplates;
 export default documentTemplates;
+
+
+
+
+
+
