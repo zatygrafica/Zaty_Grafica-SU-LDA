@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInvoiceStore } from '../../store/useInvoiceStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -7,7 +7,6 @@ import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { DollarSign, TrendingUp, TrendingDown, Printer } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import { HoverEffect } from '../ui/hover-effect';
@@ -16,8 +15,13 @@ import { supabase } from '../../services/supabaseClient';
 const FinancialModule: React.FC = () => {
   const { t } = useTranslation();
   const { invoices } = useInvoiceStore();
-  const { expenses } = useFinanceStore();
+  const { expenses, ensureExpensesSubscriptionStarted } = useFinanceStore();
   const { settings, currentUser } = useStore();
+
+  const normalizeLabel = (value: string, fallback: string) => (value && value.includes('�') ? fallback : value || fallback);
+  const labelLast7 = normalizeLabel(t('financial.last_7_days'), 'Últimos 7 dias');
+  const labelLast30 = normalizeLabel(t('financial.last_30_days'), 'Últimos 30 dias');
+  const labelThisMonth = normalizeLabel(t('financial.this_month'), 'Este Mês');
 
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
@@ -38,7 +42,7 @@ const FinancialModule: React.FC = () => {
   };
 
   const filteredInvoices = useMemo(() => {
-    return invoices.filter(invoice => {
+    return invoices.filter((invoice) => {
       const invoiceDate = new Date(invoice.createdAt);
       const isUserInvoice = currentUser?.role !== 'admin' ? invoice.order.createdBy === currentUser?.id : true;
       return invoiceDate >= startDate && invoiceDate <= endOfMonth(endDate) && isUserInvoice;
@@ -69,17 +73,27 @@ const FinancialModule: React.FC = () => {
   const financialStats = [
     {
       title: t('financial.total_revenue'),
-      description: <span className="text-3xl font-bold text-green-600 dark:text-green-500">{`${totalRevenue.toFixed(2)} ${settings.currency}`}</span>,
+      description: (
+        <span className="text-3xl font-bold text-green-600 dark:text-green-500">
+          {`${totalRevenue.toFixed(2)} ${settings.currency}`}
+        </span>
+      ),
       icon: TrendingUp,
     },
     {
       title: t('financial.total_expenses'),
-      description: <span className="text-3xl font-bold text-red-600 dark:text-red-500">{`${totalExpenses.toFixed(2)} ${settings.currency}`}</span>,
+      description: (
+        <span className="text-3xl font-bold text-red-600 dark:text-red-500">
+          {`${totalExpenses.toFixed(2)} ${settings.currency}`}
+        </span>
+      ),
       icon: TrendingDown,
     },
     {
       title: t('financial.net_profit'),
-      description: <span className={`text-3xl font-bold ${getProfitColor()}`}>{`${netProfit.toFixed(2)} ${settings.currency}`}</span>,
+      description: (
+        <span className={`text-3xl font-bold ${getProfitColor()}`}>{`${netProfit.toFixed(2)} ${settings.currency}`}</span>
+      ),
       icon: DollarSign,
     },
   ];
@@ -90,9 +104,9 @@ const FinancialModule: React.FC = () => {
     const autoTableDoc = doc as AutoTableDoc;
     const getTableY = () => autoTableDoc.lastAutoTable?.finalY ?? 25;
     const dateRange = `${format(startDate, 'dd/MM/yyyy')} - ${format(endDate, 'dd/MM/yyyy')}`;
-    
+
     doc.text(`${t('financial.financial_report')} - ${dateRange}`, 14, 20);
-    
+
     autoTable(doc, {
       startY: 25,
       body: [
@@ -109,11 +123,11 @@ const FinancialModule: React.FC = () => {
       autoTable(doc, {
         startY: getTableY() + 12,
         head: [['Data', 'Fatura', 'Cliente', 'Valor']],
-        body: filteredInvoices.map(inv => [
+        body: filteredInvoices.map((inv) => [
           format(new Date(inv.createdAt), 'dd/MM/yyyy'),
           inv.invoiceNumber,
           inv.order.clientName,
-          `${inv.order.total.toFixed(2)} ${settings.currency}`
+          `${inv.order.total.toFixed(2)} ${settings.currency}`,
         ]),
       });
     }
@@ -123,10 +137,10 @@ const FinancialModule: React.FC = () => {
       autoTable(doc, {
         startY: getTableY() + 12,
         head: [['Data', 'Descrição', 'Valor']],
-        body: filteredExpenses.map(exp => [
+        body: filteredExpenses.map((exp) => [
           format(new Date(exp.date), 'dd/MM/yyyy'),
           exp.description,
-          `${exp.amount.toFixed(2)} ${settings.currency}`
+          `${exp.amount.toFixed(2)} ${settings.currency}`,
         ]),
       });
     }
@@ -138,7 +152,7 @@ const FinancialModule: React.FC = () => {
     if (expense.type === 'salary') return `${t('financial.expense_type_salary')}: ${expense.description}`;
     if (expense.type === 'purchase') return `${t('financial.expense_type_purchase')}: ${expense.description}`;
     return expense.description;
-  }
+  };
 
   const safeRefresh = (fn: () => Promise<unknown>, label: string) =>
     fn().catch((error) => {
@@ -147,11 +161,22 @@ const FinancialModule: React.FC = () => {
     });
 
   // Sempre carregar dados do Supabase ao abrir o módulo
+  // Carrega tudo ao entrar no módulo e inicia realtime
   useEffect(() => {
-    safeRefresh(() => useInvoiceStore.getState().listInvoices(), 'faturas');
-    safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas');
-    safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salário');
-  }, []);
+    void Promise.all([
+      safeRefresh(() => useInvoiceStore.getState().listInvoices(), 'faturas'),
+      safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas'),
+      safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salário'),
+    ]).then(() => setSyncError(null));
+    ensureExpensesSubscriptionStarted?.();
+  }, [ensureExpensesSubscriptionStarted]);
+
+  // Se ainda não houver despesas carregadas, tenta novamente (fallback)
+  useEffect(() => {
+    if (!expenses || expenses.length === 0) {
+      void safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas');
+    }
+  }, [expenses, currentUser]);
 
   // Assina realtime para manter as listas sincronizadas sem recarregar
   useEffect(() => {
@@ -165,13 +190,9 @@ const FinancialModule: React.FC = () => {
       { table: 'expenses', handler: refreshExpenses },
       { table: 'salary_payments', handler: refreshSalaryPayments },
     ].forEach(({ table, handler }) => {
-      channel.on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table },
-        () => {
-          handler();
-        }
-      );
+      channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => {
+        handler();
+      });
     });
 
     void channel.subscribe((status) => {
@@ -180,8 +201,9 @@ const FinancialModule: React.FC = () => {
         setSyncError('Sincronização financeira interrompida. Tentando reconectar...');
       }
     });
+
     return () => {
-      void channel.unsubscribe();
+      void supabase.removeChannel(channel);
     };
   }, []);
 
@@ -189,15 +211,23 @@ const FinancialModule: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('financial.title')}</h1>
-        <Button onClick={handlePrintReport} icon={Printer}>{t('financial.print_report')}</Button>
+        <Button onClick={handlePrintReport} icon={Printer}>
+          {t('financial.print_report')}
+        </Button>
       </div>
 
       {/* Filters */}
       <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20 p-4 space-y-4 md:space-y-0 md:flex md:items-end md:gap-4">
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="secondary" onClick={() => setDateRange('7days')}>{t('financial.last_7_days')}</Button>
-          <Button size="sm" variant="secondary" onClick={() => setDateRange('30days')}>{t('financial.last_30_days')}</Button>
-          <Button size="sm" variant="secondary" onClick={() => setDateRange('thisMonth')}>{t('financial.this_month')}</Button>
+          <Button size="sm" variant="secondary" onClick={() => setDateRange('7days')}>
+            {labelLast7}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setDateRange('30days')}>
+            {labelLast30}
+          </Button>
+          <Button size="sm" variant="secondary" onClick={() => setDateRange('thisMonth')}>
+            {labelThisMonth}
+          </Button>
         </div>
         <div className="flex-grow grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -222,7 +252,9 @@ const FinancialModule: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue */}
         <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20">
-          <h3 className="text-lg font-semibold p-4 border-b border-gray-200/80 dark:border-white/10 text-gray-900 dark:text-white">{t('financial.revenue_details')}</h3>
+          <h3 className="text-lg font-semibold p-4 border-b border-gray-200/80 dark:border-white/10 text-gray-900 dark:text-white">
+            {t('financial.revenue_details')}
+          </h3>
           <div className="overflow-auto max-h-96">
             <table className="min-w-full divide-y divide-gray-200/80 dark:divide-neutral-800/50">
               <thead className="bg-gray-50/5 dark:bg-neutral-800/20 sticky top-0">
@@ -233,14 +265,20 @@ const FinancialModule: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200/80 dark:divide-neutral-800/50">
-                {filteredInvoices.length > 0 ? filteredInvoices.map(inv => (
-                  <tr key={inv.id} className="hover:bg-gray-500/10">
-                    <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{format(new Date(inv.createdAt), 'dd/MM/yy')}</td>
-                    <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{inv.invoiceNumber}</td>
-                    <td className="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-gray-100">{inv.order.total.toFixed(2)}</td>
+                {filteredInvoices.length > 0 ? (
+                  filteredInvoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-gray-500/10">
+                      <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{format(new Date(inv.createdAt), 'dd/MM/yy')}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{inv.invoiceNumber}</td>
+                      <td className="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-gray-100">{inv.order.total.toFixed(2)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="text-center py-6 text-sm text-gray-500">
+                      {t('financial.no_transactions')}
+                    </td>
                   </tr>
-                )) : (
-                  <tr><td colSpan={3} className="text-center py-6 text-sm text-gray-500">{t('financial.no_transactions')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -248,7 +286,9 @@ const FinancialModule: React.FC = () => {
         </div>
         {/* Expenses */}
         <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20">
-          <h3 className="text-lg font-semibold p-4 border-b border-gray-200/80 dark:border-white/10 text-gray-900 dark:text-white">{t('financial.expense_details')}</h3>
+          <h3 className="text-lg font-semibold p-4 border-b border-gray-200/80 dark:border-white/10 text-gray-900 dark:text-white">
+            {t('financial.expense_details')}
+          </h3>
           <div className="overflow-auto max-h-96">
             <table className="min-w-full divide-y divide-gray-200/80 dark:divide-neutral-800/50">
               <thead className="bg-gray-50/5 dark:bg-neutral-800/20 sticky top-0">
@@ -259,14 +299,20 @@ const FinancialModule: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200/80 dark:divide-neutral-800/50">
-                {filteredExpenses.length > 0 ? filteredExpenses.map(exp => (
-                  <tr key={exp.id} className="hover:bg-gray-500/10">
-                    <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{format(new Date(exp.date), 'dd/MM/yy')}</td>
-                  <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{getExpenseDescription(exp)}</td>
-                    <td className="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-gray-100">{exp.amount.toFixed(2)}</td>
+                {filteredExpenses.length > 0 ? (
+                  filteredExpenses.map((exp) => (
+                    <tr key={exp.id} className="hover:bg-gray-500/10">
+                      <td className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">{format(new Date(exp.date), 'dd/MM/yy')}</td>
+                      <td className="px-4 py-2 text-sm text-gray-900 dark:text-gray-100">{getExpenseDescription(exp)}</td>
+                      <td className="px-4 py-2 text-sm text-right font-medium text-gray-900 dark:text-gray-100">{exp.amount.toFixed(2)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={3} className="text-center py-6 text-sm text-gray-500">
+                      {t('financial.no_transactions')}
+                    </td>
                   </tr>
-                )) : (
-                  <tr><td colSpan={3} className="text-center py-6 text-sm text-gray-500">{t('financial.no_transactions')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -278,16 +324,3 @@ const FinancialModule: React.FC = () => {
 };
 
 export default FinancialModule;
-
-
-
-
-
-
-
-
-
-
-
-
-

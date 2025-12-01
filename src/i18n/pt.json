@@ -103,7 +103,7 @@
     "active_users": "usuÃ¡rios ativos",
     "total_purchases": "compras totais",
     "recent_activity": "Atividade Recente",
-    "last_7_days": "Registros dos Ãºltimos 7 dias",
+    "last_7_days": "Registros dos últimos 7 dias",
     "no_recent_activity": "Nenhuma atividade recente para exibir.",
     "new_this_month": "novos este mÃªs",
     "alerts": {
@@ -441,7 +441,7 @@
     "no_transactions": "Nenhuma transaÃ§Ã£o encontrada para este perÃ­odo.",
     "print_report": "Imprimir RelatÃ³rio",
     "filter_period": "Filtrar PerÃ­odo",
-    "last_7_days": "Ãšltimos 7 dias",
+    "last_7_days": "Últimos 7 dias",
     "last_30_days": "Ãšltimos 30 dias",
     "this_month": "Este MÃªs",
     "custom_range": "Personalizado",

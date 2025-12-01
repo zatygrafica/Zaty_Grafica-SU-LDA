@@ -37,6 +37,12 @@ const ReportsModule: React.FC = () => {
   const [serviceFilter, setServiceFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('');
 
+  // Normaliza labels com possíveis caracteres corrompidos
+  const normalizeLabel = (val: string, fallback: string) => (val && val.includes('�') ? fallback : val || fallback);
+  const labelLast7 = normalizeLabel(t('financial.last_7_days'), 'Últimos 7 dias');
+  const labelLast30 = normalizeLabel(t('financial.last_30_days'), 'Últimos 30 dias');
+  const labelThisMonth = normalizeLabel(t('financial.this_month'), 'Este Mês');
+
   const setDateRange = (preset: '7days' | '30days' | 'thisMonth') => {
     const today = new Date();
     if (preset === '7days') {
@@ -308,9 +314,9 @@ const ReportsModule: React.FC = () => {
 
       <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20 p-4 flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setDateRange('7days')} className="whitespace-nowrap">{t('financial.last_7_days')}</Button>
-            <Button size="sm" variant="secondary" onClick={() => setDateRange('30days')} className="whitespace-nowrap">{t('financial.last_30_days')}</Button>
-            <Button size="sm" variant="secondary" onClick={() => setDateRange('thisMonth')} className="whitespace-nowrap">{t('financial.this_month')}</Button>
+            <Button size="sm" variant="secondary" onClick={() => setDateRange('7days')} className="whitespace-nowrap">{labelLast7}</Button>
+            <Button size="sm" variant="secondary" onClick={() => setDateRange('30days')} className="whitespace-nowrap">{labelLast30}</Button>
+            <Button size="sm" variant="secondary" onClick={() => setDateRange('thisMonth')} className="whitespace-nowrap">{labelThisMonth}</Button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input label={t('financial.start_date')} type="date" value={format(startDate, 'yyyy-MM-dd')} onChange={(e) => setStartDate(new Date(e.target.value))} />
@@ -358,4 +364,3 @@ const ReportsModule: React.FC = () => {
 };
 
 export default ReportsModule;
-

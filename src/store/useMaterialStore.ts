@@ -13,6 +13,7 @@ const normalizeMaterial = (material: Material): Material => ({
 
 const normalizeMovement = (movement: StockMovement): StockMovement => ({
   ...movement,
+  type: (movement as any).type ?? (movement as any).movementType ?? movement.type,
   createdAt: movement.createdAt ? new Date(movement.createdAt) : new Date(),
 });
 
@@ -140,14 +141,23 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
     const material = get().materials.find((m) => m.id === movementData.materialId);
     if (!material) return undefined;
 
-    const payload: StockMovement = {
-      id: crypto.randomUUID(),
-      materialName: material.name,
-      ...movementData,
+    const now = new Date();
+    const id = crypto.randomUUID();
+    const movementType = movementData.type ?? 'addition_purchase';
+    // payload para o banco (sem materialName, já que a tabela não tem essa coluna; usa movement_type)
+    const dbPayload = {
+      id,
+      materialId: movementData.materialId,
+      quantity: movementData.quantity,
+      movement_type: movementType,
+      referenceId: movementData.referenceId,
+      details: movementData.details,
+      createdAt: movementData.createdAt ?? now,
     };
     try {
-      const created = await dataProvider.create<StockMovement>('stockMovements', payload);
-      const normalized = normalizeMovement(created);
+      const created = await dataProvider.create<StockMovement>('stockMovements', dbPayload as StockMovement);
+      // enriquece em memória com materialName para uso no app
+      const normalized = normalizeMovement({ ...created, materialName: material.name, type: movementType });
       set((state) => ({ stockMovements: [normalized, ...state.stockMovements] }));
       return normalized;
     } catch (error) {

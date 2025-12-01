@@ -41,6 +41,7 @@ interface FinanceState {
   deleteSalaryPaymentById: (id: string) => Promise<void>;
   subscribeToSalaryPayments: () => () => void;
   subscribeToExpenses: () => () => void;
+  ensureExpensesSubscriptionStarted: () => void;
 }
 
 export const useFinanceStore = create<FinanceState>((set, get) => ({
@@ -64,15 +65,23 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   getExpenseById: (id) => get().expenses.find((expense) => expense.id === id),
 
   createExpense: async (expenseData) => {
+    const { currentUser, addAuditLog } = useStore.getState();
+    const now = new Date();
     const payload: Expense = {
       id: crypto.randomUUID(),
-      ...expenseData,
-      createdAt: new Date(),
+      description: expenseData.description,
+      amount: expenseData.amount,
+      type: expenseData.type ?? 'purchase',
+      date: expenseData.date ?? now,
+      createdAt: now,
+      createdBy: expenseData.createdBy ?? currentUser?.id ?? null,
+      referenceId: expenseData.referenceId,
     };
     try {
       const created = await dataProvider.create<Expense>('expenses', payload);
       const normalized = normalizeExpense(created);
       set((state) => ({ expenses: [normalized, ...state.expenses] }));
+      addAuditLog({ action: 'create_expense', resourceType: 'Expense', resourceId: normalized.id });
       return normalized;
     } catch (error) {
       set({ error: (error as Error).message });
@@ -138,6 +147,15 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
       void channel.unsubscribe();
     };
   },
+  ensureExpensesSubscriptionStarted: (() => {
+    let started = false;
+    return () => {
+      if (!started) {
+        started = true;
+        get().subscribeToExpenses();
+      }
+    };
+  })(),
 
   setSalaryPayments: (payments) => set({ salaryPayments: payments }),
 
@@ -305,3 +323,4 @@ const bootstrapFinance = () => {
   if (!salaryPaymentsRealtimeUnsubscribe) salaryPaymentsRealtimeUnsubscribe = state.subscribeToSalaryPayments();
 };
 bootstrapFinance();
+
