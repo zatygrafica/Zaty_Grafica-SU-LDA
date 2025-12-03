@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useInvoiceStore } from '../../store/useInvoiceStore';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -15,10 +15,10 @@ import { supabase } from '../../services/supabaseClient';
 const FinancialModule: React.FC = () => {
   const { t } = useTranslation();
   const { invoices } = useInvoiceStore();
-  const { expenses, ensureExpensesSubscriptionStarted } = useFinanceStore();
+  const { expenses, ensureExpensesSubscriptionStarted, addOperationalExpense, addPersonalExpense } = useFinanceStore();
   const { settings, currentUser } = useStore();
 
-  const normalizeLabel = (value: string, fallback: string) => (value && value.includes('�') ? fallback : value || fallback);
+  const normalizeLabel = (value: string, fallback: string) => (value && value.trim().length > 0 ? value : fallback);
   const labelLast7 = normalizeLabel(t('financial.last_7_days'), 'Últimos 7 dias');
   const labelLast30 = normalizeLabel(t('financial.last_30_days'), 'Últimos 30 dias');
   const labelThisMonth = normalizeLabel(t('financial.this_month'), 'Este Mês');
@@ -26,6 +26,16 @@ const FinancialModule: React.FC = () => {
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [expenseForm, setExpenseForm] = useState({
+    description: '',
+    amount: '',
+    date: format(new Date(), 'yyyy-MM-dd'),
+    category: 'business' as 'business' | 'personal',
+    tag: '',
+  });
+  const [savingExpense, setSavingExpense] = useState(false);
+  const [expenseError, setExpenseError] = useState<string | null>(null);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
 
   const setDateRange = (preset: '7days' | '30days' | 'thisMonth') => {
     const today = new Date();
@@ -135,8 +145,8 @@ const FinancialModule: React.FC = () => {
     if (filteredExpenses.length > 0) {
       doc.text(t('financial.expense_details'), 14, getTableY() + 10);
       autoTable(doc, {
-        startY: getTableY() + 12,
         head: [['Data', 'Descrição', 'Valor']],
+        
         body: filteredExpenses.map((exp) => [
           format(new Date(exp.date), 'dd/MM/yyyy'),
           exp.description,
@@ -151,39 +161,79 @@ const FinancialModule: React.FC = () => {
   const getExpenseDescription = (expense: typeof expenses[0]) => {
     if (expense.type === 'salary') return `${t('financial.expense_type_salary')}: ${expense.description}`;
     if (expense.type === 'purchase') return `${t('financial.expense_type_purchase')}: ${expense.description}`;
+    if (expense.type === 'personal') return `[Pessoal] ${expense.description}`;
+    if (expense.type === 'business') return `[Operacional] ${expense.description}`;
     return expense.description;
+  };
+
+  const handleExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setExpenseError(null);
+    const amountNum = parseFloat(expenseForm.amount);
+    if (!expenseForm.description || isNaN(amountNum) || amountNum <= 0) {
+      setExpenseError('Preencha descrição e valor maior que zero.');
+      return;
+    }
+    setSavingExpense(true);
+    const payload = {
+      description: expenseForm.tag ? `${expenseForm.description} (${expenseForm.tag})` : expenseForm.description,
+      amount: amountNum,
+      date: new Date(expenseForm.date),
+      createdBy: useStore.getState().currentUser?.id ?? undefined,
+    };
+    try {
+      if (expenseForm.category === 'personal') {
+        await addPersonalExpense(payload);
+      } else {
+        await addOperationalExpense(payload);
+      }
+      setExpenseForm({
+        description: '',
+        amount: '',
+        date: format(new Date(), 'yyyy-MM-dd'),
+        category: 'business',
+        tag: '',
+      });
+    } catch (err) {
+      console.error(err);
+      setExpenseError((err as Error).message);
+    } finally {
+      setSavingExpense(false);
+    }
   };
 
   const safeRefresh = (fn: () => Promise<unknown>, label: string) =>
     fn().catch((error) => {
       console.error(`Falha ao sincronizar ${label}:`, error);
-      setSyncError(`Falha ao sincronizar ${label}. Verifique a conexão e tente novamente.`);
+      setSyncError(`Falha ao sincronizar ${label}. Verifique a conexÃ£o e tente novamente.`);
     });
 
-  // Sempre carregar dados do Supabase ao abrir o módulo
-  // Carrega tudo ao entrar no módulo e inicia realtime
   useEffect(() => {
     void Promise.all([
       safeRefresh(() => useInvoiceStore.getState().listInvoices(), 'faturas'),
       safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas'),
-      safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salário'),
+      safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salÃ¡rio'),
     ]).then(() => setSyncError(null));
     ensureExpensesSubscriptionStarted?.();
   }, [ensureExpensesSubscriptionStarted]);
 
-  // Se ainda não houver despesas carregadas, tenta novamente (fallback)
   useEffect(() => {
     if (!expenses || expenses.length === 0) {
       void safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas');
     }
   }, [expenses, currentUser]);
 
-  // Assina realtime para manter as listas sincronizadas sem recarregar
+  const expenseCategories = [
+    { value: 'business', label: 'Despesa Operacional' },
+    { value: 'personal', label: 'Despesa Pessoal' },
+  ];
+  const expenseTags = ['Energia', 'Transporte', 'ManutenÃ§Ã£o', 'ServiÃ§o Externo', 'AlimentaÃ§Ã£o', 'Lanche', 'Outros'];
+
   useEffect(() => {
     const channel = supabase.channel('financial-realtime');
     const refreshInvoices = () => safeRefresh(() => useInvoiceStore.getState().listInvoices(), 'faturas');
     const refreshExpenses = () => safeRefresh(() => useFinanceStore.getState().listExpenses(), 'despesas');
-    const refreshSalaryPayments = () => safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salário');
+    const refreshSalaryPayments = () => safeRefresh(() => useFinanceStore.getState().listSalaryPayments(), 'pagamentos de salÃ¡rio');
 
     [
       { table: 'invoices', handler: refreshInvoices },
@@ -198,7 +248,7 @@ const FinancialModule: React.FC = () => {
     void channel.subscribe((status) => {
       if (status === 'SUBSCRIBED') setSyncError(null);
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        setSyncError('Sincronização financeira interrompida. Tentando reconectar...');
+        setSyncError('SincronizaÃ§Ã£o financeira interrompida. Tentando reconectar...');
       }
     });
 
@@ -211,12 +261,16 @@ const FinancialModule: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('financial.title')}</h1>
-        <Button onClick={handlePrintReport} icon={Printer}>
-          {t('financial.print_report')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => setShowExpenseForm((prev) => !prev)}>
+            {showExpenseForm ? 'Fechar formulário de despesa' : 'Adicionar despesa'}
+          </Button>
+          <Button onClick={handlePrintReport} icon={Printer}>
+            {t('financial.print_report')}
+          </Button>
+        </div>
       </div>
 
-      {/* Filters */}
       <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20 p-4 space-y-4 md:space-y-0 md:flex md:items-end md:gap-4">
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={() => setDateRange('7days')}>
@@ -245,12 +299,82 @@ const FinancialModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats */}
+      <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20 p-4 space-y-4">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Despesas</h3>
+        {showExpenseForm && (
+          <form onSubmit={handleExpenseSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <Input
+                label="Descrição"
+                value={expenseForm.description}
+                onChange={(e) => setExpenseForm((prev) => ({ ...prev, description: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Input
+                label="Valor"
+                type="number"
+                min="0"
+                step="0.01"
+                value={expenseForm.amount}
+                onChange={(e) => setExpenseForm((prev) => ({ ...prev, amount: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <Input
+                label="Data"
+                type="date"
+                value={expenseForm.date}
+                onChange={(e) => setExpenseForm((prev) => ({ ...prev, date: e.target.value }))}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Categoria</label>
+              <select
+                className="w-full rounded-md border border-gray-300 dark:border-white/10 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 h-11"
+                value={expenseForm.category}
+                onChange={(e) =>
+                  setExpenseForm((prev) => ({ ...prev, category: e.target.value as 'business' | 'personal' }))
+                }
+              >
+                {expenseCategories.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tag (opcional)</label>
+              <select
+                className="w-full rounded-md border border-gray-300 dark:border-white/10 bg-white dark:bg-neutral-800 text-gray-900 dark:text-white shadow-sm focus:border-primary-500 focus:ring-primary-500 h-11"
+                value={expenseForm.tag}
+                onChange={(e) => setExpenseForm((prev) => ({ ...prev, tag: e.target.value }))}
+              >
+                <option value="">--</option>
+                {expenseTags.map((tag) => (
+                  <option key={tag} value={tag}>
+                    {tag}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="md:col-span-4 flex items-center gap-3">
+              <Button type="submit" disabled={savingExpense}>
+                {savingExpense ? 'Salvando...' : 'Salvar Despesa'}
+              </Button>
+              {expenseError && <span className="text-sm text-red-500">{expenseError}</span>}
+            </div>
+          </form>
+        )}
+      </div>
+
       <HoverEffect items={financialStats} className="lg:grid-cols-3" />
 
-      {/* Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue */}
         <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20">
           <h3 className="text-lg font-semibold p-4 border-b border-gray-200/80 dark:border-white/10 text-gray-900 dark:text-white">
             {t('financial.revenue_details')}
@@ -284,7 +408,6 @@ const FinancialModule: React.FC = () => {
             </table>
           </div>
         </div>
-        {/* Expenses */}
         <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20">
           <h3 className="text-lg font-semibold p-4 border-b border-gray-200/80 dark:border-white/10 text-gray-900 dark:text-white">
             {t('financial.expense_details')}
@@ -294,8 +417,8 @@ const FinancialModule: React.FC = () => {
               <thead className="bg-gray-50/5 dark:bg-neutral-800/20 sticky top-0">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Data</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">DescriÃ§Ã£o</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Descrição</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Valor</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200/80 dark:divide-neutral-800/50">
@@ -324,3 +447,5 @@ const FinancialModule: React.FC = () => {
 };
 
 export default FinancialModule;
+
+

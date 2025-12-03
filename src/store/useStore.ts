@@ -239,94 +239,95 @@ export const useStore = create<AppState>((set, get) => {
       }
     },
     addPayment: async (paymentData) => {
-      const { orders } = useOrderStore.getState();
-      const { services } = useServiceStore.getState();
-      const { materials, deductStock } = useMaterialStore.getState();
-      const { addNotification, addAuditLog, currentUser } = get();
-      const { t } = i18n;
-
-      const order = orders.find((o) => o.id === paymentData.orderId);
-      if (!order) {
-        return { success: false, message: 'Pedido nao encontrado.' };
-      }
-
-      const requiredStock = new Map<string, { quantity: number; name: string; unit: string }>();
-      order.items.forEach((item) => {
-        const service = services.find((s) => s.id === item.serviceId);
-        if (!service?.materialsUsed) return;
-
-        service.materialsUsed.forEach((consumption) => {
-          const material = materials.find((m) => m.id === consumption.materialId);
-          if (!material) return;
-
-          let deductionAmount = 0;
-          if (material.unit === 'meter' && consumption.length) {
-            deductionAmount = consumption.length * item.quantity;
-          } else if (material.unit !== 'meter' && consumption.quantity) {
-            deductionAmount = consumption.quantity * item.quantity;
-          }
-
-          if (deductionAmount > 0) {
-            const currentRequired = requiredStock.get(material.id)?.quantity || 0;
-            requiredStock.set(material.id, {
-              quantity: currentRequired + deductionAmount,
-              name: material.name,
-              unit: material.unit,
-            });
-          }
-        });
-      });
-
-      const insufficientMaterials: string[] = [];
-      for (const [materialId, req] of requiredStock.entries()) {
-        const material = materials.find((m) => m.id === materialId);
-        if (!material || material.currentStock < req.quantity) {
-          insufficientMaterials.push(
-            `${req.name} (necessario: ${req.quantity.toFixed(2)}${t(`materials.units.${req.unit}`)}, disponivel: ${
-              (material?.currentStock ?? 0).toFixed(2)
-            }${t(`materials.units.${req.unit}`)})`
-          );
+      try {
+        const { orders } = useOrderStore.getState();
+        const { services } = useServiceStore.getState();
+        const materialStore = useMaterialStore.getState();
+        // Garante materiais carregados para cálculo correto de estoque
+        if (!materialStore.materials || materialStore.materials.length === 0) {
+          await materialStore.loadMaterials?.();
         }
-      }
+        const { materials, deductStock } = useMaterialStore.getState();
+        const { addNotification, addAuditLog, currentUser } = get();
+        const { t } = i18n;
 
-      if (insufficientMaterials.length > 0) {
-        const errorMessage = `Estoque insuficiente: ${insufficientMaterials.join(', ')}`;
-        addNotification({
-          id: generateId(),
-          type: 'error',
-          title: 'Pagamento Bloqueado',
-          message: errorMessage,
-          read: false,
-          createdAt: new Date(),
+        const order = orders.find((o) => o.id === paymentData.orderId);
+        if (!order) {
+          return { success: false, message: 'Pedido nao encontrado.' };
+        }
+
+        const requiredStock = new Map<string, { quantity: number; name: string; unit: string }>();
+        order.items.forEach((item) => {
+          const service = services.find((s) => s.id === item.serviceId);
+          if (!service?.materialsUsed) return;
+
+          service.materialsUsed.forEach((consumption) => {
+            const material = materials.find((m) => m.id === consumption.materialId);
+            if (!material) return;
+
+            let deductionAmount = 0;
+            if (material.unit === 'meter' && consumption.length) {
+              deductionAmount = consumption.length * item.quantity;
+            } else if (material.unit !== 'meter' && consumption.quantity) {
+              deductionAmount = consumption.quantity * item.quantity;
+            }
+
+            if (deductionAmount > 0) {
+              const currentRequired = requiredStock.get(material.id)?.quantity || 0;
+              requiredStock.set(material.id, {
+                quantity: currentRequired + deductionAmount,
+                name: material.name,
+                unit: material.unit,
+              });
+            }
+          });
         });
-        return { success: false, message: errorMessage };
+
+        const insufficientMaterials: string[] = [];
+        for (const [materialId, req] of requiredStock.entries()) {
+          const material = materials.find((m) => m.id === materialId);
+          if (!material || material.currentStock < req.quantity) {
+            insufficientMaterials.push(
+              `${req.name} (necessario: ${req.quantity.toFixed(2)}${t(`materials.units.${req.unit}`)}, disponivel: ${
+                (material?.currentStock ?? 0).toFixed(2)
+              }${t(`materials.units.${req.unit}`)})`
+            );
+          }
+        }
+
+        if (insufficientMaterials.length > 0) {
+          const errorMessage = `Estoque insuficiente: ${insufficientMaterials.join(', ')}`;
+          addNotification({
+            id: generateId(),
+            type: 'error',
+            title: 'Pagamento Bloqueado',
+            message: errorMessage,
+            read: false,
+            createdAt: new Date(),
+          });
+          return { success: false, message: errorMessage };
+        }
+
+        for (const [materialId, req] of requiredStock.entries()) {
+          await deductStock(materialId, req.quantity, order.id, `Pagamento para Pedido ${order.orderNumber}`);
+        }
+
+        const payload: Payment = {
+          id: generateId(),
+          ...paymentData,
+          createdAt: new Date(),
+        };
+
+        const created = await dataProvider.create<Payment>('payments', payload);
+        const normalized = normalizePayment(created);
+        set((state) => ({ payments: [normalized, ...state.payments], paymentsLoaded: true }));
+        addAuditLog({ action: 'create', resourceType: 'Payment', resourceId: normalized.id });
+
+        return { success: true };
+      } catch (error) {
+        console.error('Erro ao registrar pagamento:', error);
+        return { success: false, message: (error as Error).message };
       }
-
-      for (const [materialId, req] of requiredStock.entries()) {
-        await deductStock(materialId, req.quantity, order.id, `Pagamento para Pedido ${order.orderNumber}`);
-      }
-
-      const payload: Payment = {
-        id: generateId(),
-        ...paymentData,
-        createdAt: new Date(),
-      };
-
-      const created = await dataProvider.create<Payment>('payments', payload);
-      const normalized = normalizePayment(created);
-      set((state) => ({ payments: [normalized, ...state.payments], paymentsLoaded: true }));
-      addAuditLog({ action: 'create', resourceType: 'Payment', resourceId: normalized.id });
-
-      await useFinanceStore.getState().addExpense({
-        description: `Pagamento para Pedido ${order.orderNumber}`,
-        amount: normalized.amount,
-        type: 'other',
-        date: normalized.date,
-        createdBy: currentUser?.id,
-        referenceId: normalized.id,
-      });
-
-      return { success: true };
     },
     updatePayment: (id, paymentUpdate) => {
       set((state) => ({

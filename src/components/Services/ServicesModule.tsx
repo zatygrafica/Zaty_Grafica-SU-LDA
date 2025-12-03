@@ -115,7 +115,9 @@ const ServicesModule: React.FC = () => {
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate" title={service.name}>{service.name}</h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        {service.basePrice.toFixed(2)} {settings.currency} / {t(`materials.units.${service.unit}`)}
+                        {service.unit === 'meter'
+                          ? `${service.basePrice.toFixed(2)} ${settings.currency} / m²`
+                          : `${service.basePrice.toFixed(2)} ${settings.currency} / ${t(`materials.units.${service.unit}`)}`}
                       </p>
                     </div>
                   </div>

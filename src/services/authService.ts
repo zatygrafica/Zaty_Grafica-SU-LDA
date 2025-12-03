@@ -5,9 +5,6 @@ import type { Session, User } from '@supabase/supabase-js';
 type SignInParams = { email: string; password: string };
 
 export const authService = {
-  async signUp() {
-    throw new Error('Sign up is disabled. Use an admin-provisioned account.');
-  },
   async signIn({ email, password }: SignInParams) {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;

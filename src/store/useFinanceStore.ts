@@ -30,6 +30,8 @@ interface FinanceState {
   getExpenseById: (id: string) => Expense | undefined;
   createExpense: (expense: ExpenseInput) => Promise<Expense>;
   addExpense: (expense: ExpenseInput) => Promise<Expense>;
+  addOperationalExpense: (expense: Omit<ExpenseInput, 'type'>) => Promise<Expense>;
+  addPersonalExpense: (expense: Omit<ExpenseInput, 'type'>) => Promise<Expense>;
   updateExpenseById: (id: string, expense: Partial<Expense>) => Promise<Expense | undefined>;
   deleteExpenseById: (id: string) => Promise<void>;
   setSalaryPayments: (payments: SalaryPayment[]) => void;
@@ -67,11 +69,16 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   createExpense: async (expenseData) => {
     const { currentUser, addAuditLog } = useStore.getState();
     const now = new Date();
+    // apenas tipos válidos de despesa
+    const allowedTypes: Expense['type'][] = ['salary', 'purchase', 'other', 'business', 'personal'];
+    const type: Expense['type'] = allowedTypes.includes(expenseData.type as Expense['type'])
+      ? (expenseData.type as Expense['type'])
+      : 'other';
     const payload: Expense = {
       id: crypto.randomUUID(),
       description: expenseData.description,
       amount: expenseData.amount,
-      type: expenseData.type ?? 'purchase',
+      type,
       date: expenseData.date ?? now,
       createdAt: now,
       createdBy: expenseData.createdBy ?? currentUser?.id ?? null,
@@ -90,6 +97,14 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   },
 
   addExpense: async (expenseData) => get().createExpense(expenseData),
+
+  // uso específico para despesas operacionais (manutenção, serviços externos etc.)
+  addOperationalExpense: async (expenseData) =>
+    get().createExpense({ ...expenseData, type: 'business' }),
+
+  // despesas pessoais/domésticas
+  addPersonalExpense: async (expenseData) =>
+    get().createExpense({ ...expenseData, type: 'personal' }),
 
   updateExpenseById: async (id, expenseUpdate) => {
     try {

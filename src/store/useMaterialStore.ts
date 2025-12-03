@@ -137,19 +137,25 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
     useStore.getState().addAuditLog({ action: 'zero_stock', resourceType: 'Material', resourceId: id });
   },
 
-  addStockMovement: async (movementData) => {
+ addStockMovement: async (movementData) => {
     const material = get().materials.find((m) => m.id === movementData.materialId);
     if (!material) return undefined;
 
     const now = new Date();
     const id = crypto.randomUUID();
-    const movementType = movementData.type ?? 'addition_purchase';
+    const rawType = movementData.type ?? 'addition_purchase';
+    // Compatibiliza com enum/check do banco ('addition' | 'deduction' | 'adjustment')
+    const normalizedType =
+      rawType.toLowerCase().includes('deduct') ? 'deduction' :
+      rawType.toLowerCase().includes('adjust') ? 'adjustment' :
+      'addition';
+
     // payload para o banco (sem materialName, já que a tabela não tem essa coluna; usa movement_type)
     const dbPayload = {
       id,
       materialId: movementData.materialId,
       quantity: movementData.quantity,
-      movement_type: movementType,
+      movement_type: normalizedType,
       referenceId: movementData.referenceId,
       details: movementData.details,
       createdAt: movementData.createdAt ?? now,
@@ -157,7 +163,7 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
     try {
       const created = await dataProvider.create<StockMovement>('stockMovements', dbPayload as StockMovement);
       // enriquece em memória com materialName para uso no app
-      const normalized = normalizeMovement({ ...created, materialName: material.name, type: movementType });
+      const normalized = normalizeMovement({ ...created, materialName: material.name, type: normalizedType });
       set((state) => ({ stockMovements: [normalized, ...state.stockMovements] }));
       return normalized;
     } catch (error) {

@@ -71,6 +71,9 @@ export interface Service {
   description?: string;
   basePrice: number;
   unit: ServiceUnit;
+  // meter-specific defaults
+  defaultWidth?: number;
+  defaultLength?: number;
   variations?: ServiceVariation[];
   materialsUsed?: MaterialConsumption[];
   createdAt: Date;
@@ -227,7 +230,7 @@ export interface Expense {
   id: string;
   description: string;
   amount: number;
-  type: 'salary' | 'purchase' | 'other';
+  type: 'salary' | 'purchase' | 'other' | 'business' | 'personal';
   date: Date;
   createdBy?: string;
   createdAt: Date;
