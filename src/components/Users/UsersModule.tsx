@@ -18,6 +18,7 @@ import { generateId } from '../../utils/id';
 import ModuleDataState from '../Common/ModuleDataState';
 import { CardGridSkeleton, TableSkeleton } from '../Common/SkeletonLoaders';
 import { useIncrementalList } from '../../hooks/useIncrementalList';
+import { storageService } from '../../services/storageService';
 
 const UsersModule: React.FC = () => {
   const { t } = useTranslation();
@@ -30,6 +31,7 @@ const UsersModule: React.FC = () => {
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [isTransferConfirmOpen, setIsTransferConfirmOpen] = useState(false);
   const [isTransferProgressOpen, setIsTransferProgressOpen] = useState(false);
+  const [avatarCache, setAvatarCache] = useState<Record<string, string>>({});
   
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
   const [userToProcess, setUserToProcess] = useState<User | null>(null);
@@ -41,6 +43,30 @@ const UsersModule: React.FC = () => {
     const unsubscribe = subscribeToRealtime();
     return () => unsubscribe();
   }, [listUsers, subscribeToRealtime]);
+
+  // Resolve signed URLs for avatars when list changes
+  useEffect(() => {
+    const loadAvatars = async () => {
+      const entries = await Promise.all(
+        users
+          .filter((u) => u.photoUrl && !avatarCache[u.id])
+          .map(async (u) => {
+            try {
+              const url = await storageService.getSignedUrl(u.photoUrl!, 300, 'profile_photos');
+              return [u.id, url] as const;
+            } catch (e) {
+              console.warn('Avatar signed URL fail', e);
+              return null;
+            }
+          })
+      );
+      const mapped = entries.filter((e): e is [string, string] => Boolean(e));
+      if (mapped.length > 0) {
+        setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(mapped) }));
+      }
+    };
+    void loadAvatars();
+  }, [users, avatarCache]);
 
   const isAdmin = currentUser?.role === 'admin';
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -125,7 +151,7 @@ const UsersModule: React.FC = () => {
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-12 h-12 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
                       {user.photoUrl ? (
-                        <img src={user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
+                        <img src={avatarCache[user.id] ?? user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
                       ) : (
                         <Users className="w-6 h-6 text-gray-500" />
                       )}
@@ -168,7 +194,7 @@ const UsersModule: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
                           {user.photoUrl ? (
-                            <img src={user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
+                            <img src={avatarCache[user.id] ?? user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
                           ) : (
                             <Users className="w-5 h-5 text-gray-500" />
                           )}
