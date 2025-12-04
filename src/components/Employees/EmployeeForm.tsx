@@ -16,6 +16,8 @@ import Combobox from '../Common/Combobox';
 import Textarea from '../Common/Textarea';
 import CurrencyInput from '../Common/CurrencyInput';
 import { formatPhoneNumber, formatDigitsOnly } from '../../utils/formatting';
+import { storageService } from '../../services/storageService';
+import { generateId } from '../../utils/id';
 
 interface EmployeeFormProps {
   isOpen: boolean;
@@ -30,7 +32,8 @@ type EmployeeFormData = Omit<Employee, 'id' | 'createdAt' | 'updatedAt' | 'docum
 const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }) => {
   const { t } = useTranslation();
   const { createEmployee, updateEmployeeById } = useEmployeeStore();
-  const [photoPreview, setPhotoPreview] = useState<string | null>(employee?.photoUrl || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPath, setPhotoPath] = useState<string | null>(employee?.photoUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validationSchema = yup.object().shape({
@@ -94,7 +97,15 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
           startDate: employee.startDate ? format(new Date(employee.startDate), 'yyyy-MM-dd') : '',
           paymentDate: employee.paymentDate ?? null,
         });
-        setPhotoPreview(employee.photoUrl || null);
+        setPhotoPath(employee.photoUrl ?? null);
+        if (employee.photoUrl) {
+          void storageService
+            .getSignedUrl(employee.photoUrl, 60, 'profile_photos')
+            .then(setPhotoPreview)
+            .catch(() => setPhotoPreview(null));
+        } else {
+          setPhotoPreview(null);
+        }
       } else {
         reset({
           name: '',
@@ -114,20 +125,30 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
           paymentDate: null,
         });
         setPhotoPreview(null);
+        setPhotoPath(null);
       }
     }
   }, [isOpen, employee, reset]);
 
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPhotoPreview(result);
-        setValue('photoUrl', result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const { path } = await storageService.upload(
+          file,
+          file.name,
+          'employee',
+          employee?.id,
+          { source: 'employee_profile_photo' },
+          'profile_photos'
+        );
+        const signedUrl = await storageService.getSignedUrl(path, 60, 'profile_photos');
+        setPhotoPath(path);
+        setValue('photoUrl', path);
+        setPhotoPreview(signedUrl);
+      } catch (error) {
+        console.error('Falha no upload da foto do funcionário', error);
+      }
     }
   };
 
@@ -148,6 +169,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
     const finalData = {
       ...data,
       startDate: data.startDate ? parseISO(data.startDate) : undefined,
+      photoUrl: photoPath ?? data.photoUrl,
     };
 
     if (employee) {

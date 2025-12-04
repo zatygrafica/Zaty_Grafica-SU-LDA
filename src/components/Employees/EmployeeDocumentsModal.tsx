@@ -7,6 +7,7 @@ import Modal from '../Common/Modal';
 import Button from '../Common/Button';
 import DocumentViewerModal from './DocumentViewerModal';
 import { generateId } from '../../utils/id';
+import { storageService } from '../../services/storageService';
 
 interface EmployeeDocumentsModalProps {
   isOpen: boolean;
@@ -21,18 +22,33 @@ const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({ isOpen,
   const [documentType, setDocumentType] = useState('other');
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<EmployeeDocument | null>(null);
+  const [signing, setSigning] = useState(false);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const newDocument: EmployeeDocument = {
-        id: generateId(),
-        name: file.name,
-        type: documentType,
-        url: URL.createObjectURL(file), // Temporary URL for preview
-        uploadedAt: new Date(),
-      };
-      await addDocumentToEmployee(employee.id, newDocument);
+      try {
+        const { path } = await storageService.upload(
+          file,
+          file.name,
+          'employee_doc',
+          employee.id,
+          { type: documentType },
+          'employee_docs'
+        );
+        const signedUrl = await storageService.getSignedUrl(path, 60, 'employee_docs');
+        const newDocument: EmployeeDocument = {
+          id: generateId(),
+          name: file.name,
+          type: documentType,
+          url: signedUrl,
+          path,
+          uploadedAt: new Date(),
+        };
+        await addDocumentToEmployee(employee.id, newDocument);
+      } catch (error) {
+        console.error('Falha ao enviar documento', error);
+      }
     }
   };
 
@@ -40,8 +56,17 @@ const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({ isOpen,
     fileInputRef.current?.click();
   };
 
-  const handleViewDocument = (doc: EmployeeDocument) => {
-    setViewingDocument(doc);
+  const handleViewDocument = async (doc: EmployeeDocument) => {
+    setSigning(true);
+    try {
+      const signedUrl = await storageService.getSignedUrl(doc.path ?? doc.url, 60, 'employee_docs');
+      setViewingDocument({ ...doc, url: signedUrl });
+    } catch (error) {
+      console.error('Falha ao abrir documento', error);
+      setViewingDocument(doc);
+    } finally {
+      setSigning(false);
+    }
     setIsViewerOpen(true);
   };
 

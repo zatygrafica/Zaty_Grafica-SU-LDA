@@ -159,7 +159,8 @@ export interface EmployeeDocument {
   id: string;
   type: string;
   name: string;
-  url: string;
+  url: string; // signed URL (for immediate view)
+  path?: string; // storage path for future signed URLs
   uploadedAt: Date;
 }
 
@@ -355,8 +356,22 @@ export interface Note {
   title: string;
   content: string;
   isFavorite: boolean;
+  dueDate?: Date;
+  reminderAt?: Date;
+  completed?: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Attachment {
+  id: string;
+  bucket: string;
+  path: string;
+  resourceType: string;
+  resourceId?: string;
+  uploadedBy?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: Date;
 }
 
 // Chat & Collaboration
@@ -406,6 +421,8 @@ export interface SupportSettings {
 }
 
 export interface AppSettings {
+  theme?: 'light' | 'dark';
+  language?: string;
   deletionPassword?: string;
   vatRate: number;
   currency: string;
@@ -414,4 +431,5 @@ export interface AppSettings {
   emailNotificationsEnabled: boolean;
   company: CompanySettings;
   support: SupportSettings;
+  auditLogs?: AuditLog[];
 }

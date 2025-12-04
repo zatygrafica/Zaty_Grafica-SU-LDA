@@ -6,6 +6,7 @@ import { useMaterialStore } from './useMaterialStore';
 import { useFinanceStore } from './useFinanceStore';
 import i18n from '../i18n';
 import { useSettingsStore } from './useSettingsStore';
+import { useAuthStore } from './useAuthStore';
 import { createDefaultSettings } from './settingsDefaults';
 import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
 import { generateId } from '../utils/id';
@@ -28,7 +29,7 @@ applyTheme(initialTheme);
 
 type AuditLogData = Omit<AuditLog, 'id' | 'timestamp' | 'userId'>;
 type AppStatus = 'loading' | 'ready' | 'error';
-type UpdateSettingFn = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => void;
+type UpdateSettingFn = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => Promise<void>;
 
 const normalizePayment = (payment: Payment): Payment => ({
   ...payment,
@@ -86,18 +87,41 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set, get) => {
-  const updateSetting: UpdateSettingFn = (key, value) => {
-    void useSettingsStore
-      .getState()
-      .updateSetting(key, value)
-      .then((settings) => {
-        set({ settings });
-        get().addAuditLog({ action: 'update', resourceType: 'Setting', resourceId: String(key) });
-      })
-      .catch((error) => {
-        console.error('Failed to update setting', error);
+  const updateSetting: UpdateSettingFn = async (key, value) => {
+    try {
+      const settings = await useSettingsStore.getState().updateSetting(key, value);
+      set({ settings });
+      get().addAuditLog({ action: 'update', resourceType: 'Setting', resourceId: String(key) });
+    } catch (error) {
+      console.error('Failed to update setting', error);
+      get().addNotification({
+        id: generateId(),
+        type: 'error',
+        title: 'Erro ao salvar configurações',
+        message: (error as Error).message,
+        read: false,
+        createdAt: new Date(),
       });
+      throw error;
+    }
   };
+
+  // Carrega configurações do Supabase na inicialização
+  void useSettingsStore
+    .getState()
+    .loadSettings(true)
+    .then((settings) => {
+      set({ settings, auditLogs: settings.auditLogs ?? [] });
+      if (settings.theme) {
+        applyTheme(settings.theme);
+        set({ theme: settings.theme });
+      }
+      if (settings.language) {
+        i18n.changeLanguage(settings.language);
+        set({ language: settings.language });
+      }
+    })
+    .catch((error) => console.error('Failed to load settings', error));
 
   return {
     currentUser: null,
@@ -120,12 +144,26 @@ export const useStore = create<AppState>((set, get) => {
       payments: false,
     },
     login: (user) => set({ currentUser: user, appStatus: 'ready' }),
-    logout: () => {
+    logout: async () => {
       if (get().impersonatingUser) {
         get().stopImpersonation();
-      } else {
-        console.log('Logout executed. In a real app this would clear session data.');
+        return;
       }
+
+      try {
+        await useAuthStore.getState().signOut();
+      } catch (error) {
+        console.error('Erro ao sair da sessão', error);
+      }
+
+      set({
+        currentUser: null,
+        originalUser: null,
+        impersonatingUser: null,
+        appStatus: 'loading',
+        notifications: [],
+        pendingOrderForClient: null,
+      });
     },
     updateCurrentUser: (userData) =>
       set((state) => ({
@@ -167,11 +205,16 @@ export const useStore = create<AppState>((set, get) => {
       }
     },
     setAppStatus: (status) => set({ appStatus: status }),
-    setTheme: (theme) => {
+    setTheme: async (theme) => {
       applyTheme(theme);
       set({ theme });
+      await updateSetting('theme', theme);
     },
-    setLanguage: (language) => set({ language }),
+    setLanguage: async (language) => {
+      i18n.changeLanguage(language);
+      set({ language });
+      await updateSetting('language', language);
+    },
     setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
     setShowPendingServicesPopup: (show) => set({ showPendingServicesPopup: show }),
     disablePendingServicesPopup: () => set({ pendingServicesPopupDisabled: true }),
@@ -189,7 +232,7 @@ export const useStore = create<AppState>((set, get) => {
         ),
       })),
     clearNotifications: () => set({ notifications: [] }),
-    addAuditLog: (data) => {
+    addAuditLog: async (data) => {
       const { currentUser } = get();
       if (!currentUser) return;
       const newLog: AuditLog = {
@@ -199,10 +242,25 @@ export const useStore = create<AppState>((set, get) => {
         timestamp: new Date(),
       };
       set((state) => ({ auditLogs: [newLog, ...state.auditLogs] }));
+      // persiste no settings (auditLogs) sem criar registros novos
+      const newList = get().auditLogs;
+      try {
+        await useSettingsStore.getState().updateSetting('auditLogs', newList);
+        set((state) => ({ settings: { ...state.settings, auditLogs: newList } }));
+      } catch (error) {
+        console.error('Failed to persist audit log', error);
+      }
     },
     clearAuditLogs: () => {
-      get().addAuditLog({ action: 'clear_all', resourceType: 'AuditLog', resourceId: 'all' });
-      set({ auditLogs: [] });
+      void get()
+        .addAuditLog({ action: 'clear_all', resourceType: 'AuditLog', resourceId: 'all' })
+        .then(() => {
+          set({ auditLogs: [] });
+          void useSettingsStore
+            .getState()
+            .updateSetting('auditLogs', [])
+            .then(() => set((state) => ({ settings: { ...state.settings, auditLogs: [] } })));
+        });
     },
     setPayments: (payments) =>
       set({

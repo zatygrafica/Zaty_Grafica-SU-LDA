@@ -34,7 +34,12 @@ const mapProfileToUser = (profile: ProfileRecord): User => ({
   email: profile.email ?? '',
   role: (profile.role as User['role']) ?? 'user',
   permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
-  photoUrl: profile.photoUrl ?? profile.avatarUrl ?? undefined,
+  photoUrl:
+    profile.photoUrl ??
+    profile.avatarUrl ??
+    (profile as unknown as { photo_url?: string }).photo_url ??
+    (profile as unknown as { avatar_url?: string }).avatar_url ??
+    undefined,
   isBlocked: profile.isBlocked ?? false,
   createdAt: profile.createdAt ? new Date(profile.createdAt) : new Date(),
   updatedAt: profile.updatedAt ? new Date(profile.updatedAt) : new Date(),
@@ -170,7 +175,17 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
 
     const action = userData.password ? 'change_password' : 'update';
-    const payload = { ...userData, updatedAt: new Date() };
+    const payload: Partial<User> & { avatarUrl?: string; fullName?: string } = { ...userData, updatedAt: new Date() };
+    // Garantir que avatar_url seja preenchido com o path salvo em photoUrl
+    if (payload.photoUrl && !payload.avatarUrl) {
+      payload.avatarUrl = payload.photoUrl;
+      delete (payload as Partial<User>).photoUrl; // evita coluna photo_url inexistente
+    }
+    // Mapear nome para full_name (coluna existente em profiles)
+    if (payload.name) {
+      payload.fullName = payload.name;
+      delete (payload as Partial<User>).name;
+    }
 
     try {
       const snakePayload = convertKeysToSnakeCase(payload);

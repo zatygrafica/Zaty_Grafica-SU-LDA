@@ -13,9 +13,10 @@ interface NotesState {
   listNotes: (force?: boolean) => Promise<Note[]>;
   getNoteById: (id: string) => Note | undefined;
   addNote: () => Promise<Note>;
-  updateNote: (id: string, title: string, content: string) => Promise<Note | undefined>;
+  updateNote: (id: string, title: string, content: string, extra?: Partial<Note>) => Promise<Note | undefined>;
   deleteNote: (id: string) => Promise<void>;
   toggleFavorite: (id: string) => Promise<void>;
+  toggleCompleted: (id: string) => Promise<void>;
   subscribeToRealtime: () => () => void;
 }
 
@@ -56,6 +57,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       title: 'Nova Anotação',
       content: '',
       isFavorite: false,
+      completed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -71,11 +73,11 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     }
   },
 
-  updateNote: async (id, title, content) => {
+  updateNote: async (id, title, content, extra = {}) => {
     const { addAuditLog } = useStore.getState();
     const updatedAt = new Date();
     try {
-      const updated = await dataProvider.update<Note>('notes', id, { title, content, updatedAt });
+      const updated = await dataProvider.update<Note>('notes', id, { title, content, updatedAt, ...extra });
       if (!updated) return undefined;
       const normalized = normalizeNote(updated);
       set((state) => ({
@@ -118,6 +120,13 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       set({ error: (error as Error).message });
       throw error;
     }
+  },
+
+  toggleCompleted: async (id) => {
+    const note = get().notes.find((n) => n.id === id);
+    if (!note) return;
+    const completed = !note.completed;
+    await get().updateNote(id, note.title, note.content, { completed });
   },
 
   subscribeToRealtime: () => {

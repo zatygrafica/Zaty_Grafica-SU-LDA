@@ -80,13 +80,21 @@ export function mapProfileToUser(profile: Profile): {
   createdAt: Date;
   updatedAt: Date;
 } {
+  // cobre chaves snake e camel que podem vir do Supabase ou do convertKeysToCamelCase
+  const avatarUrl =
+    (profile as unknown as { avatarUrl?: string }).avatarUrl ??
+    (profile as unknown as { photoUrl?: string }).photoUrl ??
+    (profile as unknown as { photo_url?: string }).photo_url ??
+    profile.avatar_url ??
+    undefined;
+
   return {
     id: profile.id,
     name: profile.full_name || profile.email,
     email: profile.email,
     role: profile.role ?? 'user',
     permissions: profile.permissions ?? [],
-    photoUrl: profile.avatar_url ?? undefined,
+    photoUrl: avatarUrl,
     isBlocked: false,
     createdAt: profile.created_at ? new Date(profile.created_at) : new Date(),
     updatedAt: profile.updated_at ? new Date(profile.updated_at) : new Date(),

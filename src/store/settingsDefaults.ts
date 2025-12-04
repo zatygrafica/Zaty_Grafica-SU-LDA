@@ -1,6 +1,8 @@
 import type { AppSettings } from '../types';
 
 export const createDefaultSettings = (): AppSettings => ({
+  theme: 'light',
+  language: 'pt',
   deletionPassword: 'delete123!',
   vatRate: 17,
   currency: 'MZN',
@@ -18,4 +20,5 @@ export const createDefaultSettings = (): AppSettings => ({
     email: '',
     link: '',
   },
+  auditLogs: [],
 });

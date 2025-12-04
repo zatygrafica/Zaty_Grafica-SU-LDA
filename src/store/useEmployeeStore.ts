@@ -10,7 +10,10 @@ const defaultWorkSchedule = { start: '08:00', end: '18:00', totalHours: 10 };
 const normalizeEmployee = (employee: Employee): Employee => ({
   ...employee,
   workSchedule: employee.workSchedule ?? defaultWorkSchedule,
-  documents: employee.documents ?? [],
+  documents: (employee.documents ?? []).map((doc) => ({
+    ...doc,
+    uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt) : new Date(),
+  })),
   createdAt: employee.createdAt ? new Date(employee.createdAt) : new Date(),
   updatedAt: employee.updatedAt ? new Date(employee.updatedAt) : new Date(),
 });

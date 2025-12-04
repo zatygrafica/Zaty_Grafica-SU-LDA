@@ -11,6 +11,7 @@ import Input from '../Common/Input';
 import PasswordStrengthMeter from '../Users/PasswordStrengthMeter';
 import { User as UserIcon } from 'lucide-react';
 import { generateId } from '../../utils/id';
+import { storageService } from '../../services/storageService';
 
 type ProfileFormData = Partial<Pick<UserType, 'name' | 'email' | 'password' | 'photoUrl'>>;
 
@@ -20,7 +21,8 @@ const MyProfileSettings: React.FC = () => {
   const { updateUserById } = useUserStore();
   
   const [password, setPassword] = useState('');
-  const [photoPreview, setPhotoPreview] = useState<string | null>(currentUser?.photoUrl || null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPath, setPhotoPath] = useState<string | null>(currentUser?.photoUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validationSchema = yup.object().shape({
@@ -50,27 +52,63 @@ const MyProfileSettings: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      reset({
+      const defaults = {
         name: currentUser.name,
         email: currentUser.email ?? '',
         photoUrl: currentUser.photoUrl ?? '',
         password: '',
         confirmPassword: '',
-      });
-      setPhotoPreview(currentUser.photoUrl || null);
+      };
+      reset(defaults);
+      setPhotoPath(currentUser.photoUrl ?? null);
+      if (currentUser.photoUrl) {
+        void storageService
+          .getSignedUrl(currentUser.photoUrl)
+          .then(setPhotoPreview)
+          .catch(() => setPhotoPreview(null));
+      } else {
+        setPhotoPreview(null);
+      }
     }
   }, [currentUser, reset]);
 
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPhotoPreview(result);
-        setValue('photoUrl', result);
-      };
-      reader.readAsDataURL(file);
+      try {
+        const { path, attachment } = await storageService.upload(
+          file,
+          file.name,
+          'user',
+          currentUser?.id,
+          { source: 'profile_photo' },
+          'profile_photos'
+        );
+        const signedUrl = await storageService.getSignedUrl(path, 60, 'profile_photos');
+        setPhotoPath(path);
+        setValue('photoUrl', path);
+        setPhotoPreview(signedUrl);
+
+        // feedback
+        addNotification({
+          id: generateId(),
+          type: 'success',
+          title: t('common.success'),
+          message: t('users.profile_photo') + ' atualizada.',
+          read: false,
+          createdAt: new Date(),
+        });
+      } catch (error) {
+        console.error('Upload de foto falhou', error);
+        addNotification({
+          id: generateId(),
+          type: 'error',
+          title: t('common.error'),
+          message: 'Falha ao enviar a foto. Tente novamente.',
+          read: false,
+          createdAt: new Date(),
+        });
+      }
     }
   };
 
@@ -80,7 +118,7 @@ const MyProfileSettings: React.FC = () => {
     const updateData: Partial<UserType> = { 
       name: data.name,
       email: data.email,
-      photoUrl: data.photoUrl,
+      photoUrl: photoPath ?? data.photoUrl,
     };
     if (data.password) {
       updateData.password = data.password;
@@ -163,16 +201,16 @@ const MyProfileSettings: React.FC = () => {
           type="password"
           {...register('confirmPassword')}
           error={errors.confirmPassword?.message}
-          className="mt-4"
-        />
-      </div>
-      <div className="flex justify-end pt-4">
-        <Button type="submit" variant="primary" loading={isSubmitting}>
+        className="mt-4"
+      />
+    </div>
+    <div className="flex justify-end pt-4">
+      <Button type="submit" variant="primary" loading={isSubmitting}>
           {t('common.save')}
-        </Button>
-      </div>
-    </form>
-  );
+      </Button>
+    </div>
+  </form>
+);
 };
 
 export default MyProfileSettings;

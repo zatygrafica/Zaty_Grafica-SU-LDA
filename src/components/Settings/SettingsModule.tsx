@@ -30,6 +30,7 @@ import IntelligentCalculator from './IntelligentCalculator';
 import PasswordStrengthMeter from '../Users/PasswordStrengthMeter';
 import DataSettings from './DataSettings';
 import { generateId } from '../../utils/id';
+import { useSettingsStore } from '../../store/useSettingsStore';
 
 interface SupportFormData {
   phone: string;
@@ -56,7 +57,9 @@ const SettingsModule: React.FC = () => {
     updateSetting,
     addNotification,
     enablePendingServicesPopup,
+    setSettings,
   } = useStore();
+  const { loadSettings } = useSettingsStore();
   const [activeTab, setActiveTab] = useState('profile');
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isResetDeletionPasswordConfirmOpen, setIsResetDeletionPasswordConfirmOpen] = useState(false);
@@ -64,6 +67,23 @@ const SettingsModule: React.FC = () => {
   const [confirmNewDeletionPassword, setConfirmNewDeletionPassword] = useState('');
 
   const isAdmin = currentUser?.role === 'admin';
+
+  React.useEffect(() => {
+    void loadSettings(true)
+      .then((loaded) => {
+        setSettings(loaded);
+        if (loaded.theme) {
+          setTheme(loaded.theme);
+        }
+        if (loaded.language) {
+          i18n.changeLanguage(loaded.language);
+          setLanguage(loaded.language);
+        }
+      })
+      .catch((err) => {
+        console.error('Erro ao carregar configurações', err);
+      });
+  }, [loadSettings, setSettings, setTheme, setLanguage, i18n]);
 
   const allTabs = [
     { id: 'profile', label: t('settings.my_profile'), icon: User, adminOnly: false },
