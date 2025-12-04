@@ -18,10 +18,10 @@ const FinancialModule: React.FC = () => {
   const { expenses, ensureExpensesSubscriptionStarted, addOperationalExpense, addPersonalExpense } = useFinanceStore();
   const { settings, currentUser } = useStore();
 
-  const normalizeLabel = (value: string, fallback: string) => (value && value.trim().length > 0 ? value : fallback);
-  const labelLast7 = normalizeLabel(t('financial.last_7_days'), 'Últimos 7 dias');
-  const labelLast30 = normalizeLabel(t('financial.last_30_days'), 'Últimos 30 dias');
-  const labelThisMonth = normalizeLabel(t('financial.this_month'), 'Este Mês');
+  // Labels fixados em ASCII para evitar qualquer corrupção visual
+  const labelLast7 = 'Ultimos 7 dias';
+  const labelLast30 = 'Ultimos 30 dias';
+  const labelThisMonth = 'Este Mes';
 
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
