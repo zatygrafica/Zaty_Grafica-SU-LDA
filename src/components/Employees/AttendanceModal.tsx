@@ -12,7 +12,7 @@ import {
   subMonths,
 } from 'date-fns';
 import { pt } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Printer, XCircle, Clock, User as UserIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Printer, XCircle, Clock } from 'lucide-react';
 import { clsx } from 'clsx';
 
 import { Employee, Delay } from '../../types';
@@ -26,6 +26,7 @@ import AttendanceFormModal from './AttendanceFormModal';
 import ConfirmationModal from '../Common/ConfirmationModal';
 import PasswordPromptModal from '../Common/PasswordPromptModal';
 import AttendanceReportPreview from './AttendanceReportPreview';
+import Avatar from '../Common/Avatar';
 
 interface AttendanceModalProps {
   isOpen: boolean;
@@ -122,13 +123,11 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClose, empl
       <Modal isOpen={isOpen} onClose={onClose} title="" size="2xl">
         <div className="flex items-center justify-between mb-6 -mt-2">
             <div className="flex items-center gap-4">
-            {employee.photoUrl ? (
-              <img src={avatarUrl ?? employee.photoUrl} alt={employee.name} className="w-12 h-12 rounded-full object-cover" />
-            ) : (
-                <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center">
-                  <UserIcon className="w-6 h-6 text-gray-500" />
-                </div>
-              )}
+            <Avatar
+              name={employee.name}
+              src={employee.photoUrl ? avatarUrl ?? employee.photoUrl : undefined}
+              size="w-12 h-12"
+            />
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                   {t('employees.attendance')}

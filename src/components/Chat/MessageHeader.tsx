@@ -3,8 +3,9 @@ import { useUserStore } from '../../store/useUserStore';
 import { useStore } from '../../store/useStore';
 import { useChatStore } from '../../store/useChatStore';
 import { Conversation } from '../../types';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Button from '../Common/Button';
+import Avatar from '../Common/Avatar';
 
 interface MessageHeaderProps {
   conversation: Conversation;
@@ -30,13 +31,11 @@ const MessageHeader: React.FC<MessageHeaderProps> = ({ conversation, onBack }) =
           <ArrowLeft className="w-5 h-5" />
         </Button>
       )}
-      {otherUser?.photoUrl ? (
-        <img src={otherUser.photoUrl} alt={otherUser.name} className="w-10 h-10 rounded-full object-cover" />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
-          <User className="w-5 h-5 text-gray-500" />
-        </div>
-      )}
+      <Avatar
+        name={otherUser?.name || otherUserId || 'Usuário'}
+        src={otherUser?.photoUrl}
+        size="w-10 h-10"
+      />
       <div className="ml-3">
         <h3 className="font-semibold text-gray-900 dark:text-white">
           {otherUser?.name || otherUserId || 'Usuário Desconhecido'}

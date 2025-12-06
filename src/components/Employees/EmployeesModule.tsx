@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
 import { useStore } from '../../store/useStore';
 import { Employee } from '../../types';
-import { Plus, Search, Edit, Trash2, UserCheck, FileText, FileSignature, CalendarDays, DollarSign, File, User as UserIcon } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, UserCheck, FileText, FileSignature, CalendarDays, DollarSign, File } from 'lucide-react';
 import { format } from 'date-fns';
 
 import Button from '../Common/Button';
@@ -21,6 +21,7 @@ import ModuleDataState from '../Common/ModuleDataState';
 import { CardGridSkeleton, TableSkeleton } from '../Common/SkeletonLoaders';
 import { useLoadEmployeesOnMount } from '../../hooks/useModuleLoaders';
 import { storageService } from '../../services/storageService';
+import Avatar from '../Common/Avatar';
 
 const EmployeesModule: React.FC = () => {
   const { t } = useTranslation();
@@ -178,13 +179,11 @@ const EmployeesModule: React.FC = () => {
             <div key={employee.id} className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-2xl border border-gray-200 dark:border-white/20 p-4 flex flex-col justify-between">
               <div>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
-                    {employee.photoUrl ? (
-                      <img src={avatarCache[employee.id] ?? employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <UserIcon className="w-6 h-6 text-gray-500" />
-                    )}
-                  </div>
+                  <Avatar
+                    name={employee.name}
+                    src={employee.photoUrl ? avatarCache[employee.id] ?? employee.photoUrl : undefined}
+                    size="w-12 h-12"
+                  />
                   <div>
                     <h3 className="font-semibold text-gray-900 dark:text-white truncate">{employee.name}</h3>
                     <p className="text-xs text-gray-500 dark:text-gray-400">{t(`employees.positions.${employee.position}`)}</p>
@@ -224,13 +223,11 @@ const EmployeesModule: React.FC = () => {
                 {filteredEmployees.length > 0 ? filteredEmployees.map((employee) => (
                   <tr key={employee.id} className="hover:bg-gray-500/10">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
-                        {employee.photoUrl ? (
-                          <img src={avatarCache[employee.id] ?? employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <UserIcon className="w-5 h-5 text-gray-500" />
-                        )}
-                      </div>
+                      <Avatar
+                        name={employee.name}
+                        src={employee.photoUrl ? avatarCache[employee.id] ?? employee.photoUrl : undefined}
+                        size="w-8 h-8"
+                      />
                       {employee.name}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{t(`employees.positions.${employee.position}`)}</td>

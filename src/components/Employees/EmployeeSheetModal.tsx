@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
 import { storageService } from '../../services/storageService';
+import Avatar from '../Common/Avatar';
 
 interface EmployeeSheetModalProps {
   isOpen: boolean;
@@ -58,13 +59,12 @@ const EmployeeSheetModal: React.FC<EmployeeSheetModalProps> = ({ isOpen, onClose
       <div id="employee-sheet-content" ref={sheetRef} className="bg-white text-black p-8 font-sans">
         <h1 className="text-2xl font-bold text-center mb-6">{t('employees.employee_sheet')}</h1>
         <div className="flex flex-col md:flex-row items-center gap-8">
-          <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-300">
-            {employee.photoUrl ? (
-              <img src={avatarUrl ?? employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
-            ) : (
-              <User className="w-20 h-20 text-gray-400" />
-            )}
-          </div>
+          <Avatar
+            name={employee.name}
+            src={employee.photoUrl ? avatarUrl ?? employee.photoUrl : undefined}
+            size="w-32 h-32"
+            className="border-4 border-gray-300"
+          />
           <div className="flex-1 space-y-2">
             <h2 className="text-xl font-bold">{employee.name}</h2>
             <p className="text-gray-600">{t(`employees.positions.${employee.position}`)}</p>

@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
-import { Bell, User, LogOut, Globe, Settings, Menu, Sun, Moon } from 'lucide-react';
+import { Bell, LogOut, Globe, Settings, Menu, Sun, Moon } from 'lucide-react';
 import NotificationPanel from '../Notifications/NotificationPanel';
 import Clock from '../Common/Clock';
 import SyncStatusIndicator from './SyncStatusIndicator';
 import OnlineStatusIndicator from './OnlineStatusIndicator';
 import { storageService } from '../../services/storageService';
+import Avatar from '../Common/Avatar';
 
 interface HeaderProps {
   onModuleChange: (module: string) => void;
@@ -153,13 +154,11 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
               onClick={() => setShowUserMenu(!showUserMenu)}
               className="flex items-center space-x-2 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-neutral-800"
             >
-              <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center overflow-hidden">
-                {currentUser?.photoUrl ? (
-                  <img src={avatarUrl ?? currentUser.photoUrl} alt={currentUser.name} className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-4 h-4 text-white" />
-                )}
-              </div>
+              <Avatar
+                name={currentUser?.name || 'Usuário'}
+                src={currentUser?.photoUrl ? avatarUrl ?? currentUser.photoUrl : undefined}
+                size="w-8 h-8"
+              />
               {currentUser && (
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:block">
                   {currentUser.name}

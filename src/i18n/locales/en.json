@@ -329,20 +329,56 @@
             "reset_to_default": "Reset to Default",
             "between": "Celebrated between:",
             "and": "And",
-            "first_party": "<strong>ZATY GRÁFICA, SU, LTD</strong>, with headquarters at <strong>Namicopo District, Nampula</strong>, NUIT <strong>401974687</strong>, hereinafter referred to as <strong>EMPLOYER</strong>.",
+            "first_party": "<strong>{{name}}</strong>, headquartered at <strong>{{address}}</strong>, NUIT <strong>{{nuit}}</strong>, hereinafter referred to as <strong>EMPLOYER</strong>.",
             "second_party": "<strong>{{name}}</strong>, holder of document No. <strong>{{documentNumber}}</strong>, residing at <strong>{{address}}</strong>, hereinafter referred to as <strong>EMPLOYEE</strong>.",
-            "clauses_title": "This Employment Commitment Term is celebrated and governed by the following clauses:",
-            "clause_1": "The <strong>EMPLOYEE</strong> agrees to perform the function of <strong>{{position}}</strong> with zeal, dedication, and loyalty.",
-            "clause_2": "The <strong>EMPLOYEE</strong> will comply with the work schedule established by the <strong>EMPLOYER</strong>, respecting the company's internal rules.",
-            "clause_3": "Unjustified absences or delays will result in a proportional salary deduction.",
-            "clause_4": "The <strong>EMPLOYEE</strong> will be entitled to request a salary advance/loan after <strong>15 days</strong> of effective work.",
-            "clause_5": "The <strong>EMPLOYEE</strong> is obliged to maintain professional secrecy regarding all confidential information to which they have access.",
+            "clauses_title": "This Employment Commitment Term is entered into and governed by the following clauses:",
+            "general_clauses": [
+                "The <strong>EMPLOYEE</strong> agrees to perform the role of <strong>{{position}}</strong> with zeal, dedication, and loyalty.",
+                "The <strong>EMPLOYEE</strong> will comply with the work schedule established by the <strong>EMPLOYER</strong>, respecting the company's internal rules.",
+                "The <strong>EMPLOYEE</strong> must uphold the good name, assets, and discipline in the workplace.",
+                "Unjustified absences or delays will result in proportional salary deductions.",
+                "The <strong>EMPLOYEE</strong> is entitled to request a salary advance/loan after <strong>15 days</strong> of effective work.",
+                "The <strong>EMPLOYEE</strong> is obliged to maintain professional secrecy regarding all confidential information accessed."
+            ],
             "position_clauses": {
-                "graphic_designer": "The <strong>EMPLOYEE</strong> is responsible for the creation and finalization of graphic arts, ensuring quality and deadlines agreed with clients.",
-                "production": "The <strong>EMPLOYEE</strong> must handle production equipment with care, following safety and maintenance standards.",
-                "security": "The <strong>EMPLOYEE</strong> is responsible for the security of the facilities, assets, and people within the company's perimeter during their shift."
+                "customer_service": [
+                    "Serve customers with courtesy, efficiency, and professionalism, ensuring a positive experience.",
+                    "Present the company's products and services clearly and persuasively, clarifying doubts and assisting in decision-making.",
+                    "Record and forward complaints, suggestions, and requests from customers to the responsible departments."
+                ],
+                "graphic_designer": [
+                    "Create and develop artwork and layouts for various graphic materials, according to client requests and internal guidelines.",
+                    "Meet the delivery deadlines set for each project, ensuring client satisfaction.",
+                    "Keep digital files organized, ensuring they are easy to locate and reuse."
+                ],
+                "employee": [
+                    "Assist in general tasks of the print shop, according to service needs.",
+                    "Execute work orders supporting production, finishing, and packaging.",
+                    "Keep the workspace and common areas clean and organized."
+                ],
+                "security": [
+                    "Monitor and control access to the company's facilities during their shift (day/night).",
+                    "Prevent risk situations such as theft, vandalism, or fires, and immediately report any irregularities to management.",
+                    "Protect the physical integrity of people and material goods within the company's perimeter.",
+                    "Immediately inform management and the competent authorities of any suspicious occurrence or criminal act."
+                ],
+                "production_manager": [
+                    "Coordinate and supervise the production team, ensuring service quality and meeting deadlines.",
+                    "Control stock of raw materials and request replenishment when necessary, avoiding production stoppages.",
+                    "Report production results and any constraints to the employer periodically."
+                ],
+                "production": [
+                    "Operate printing and finishing equipment according to technical instructions and safety standards.",
+                    "Execute work orders accurately, ensuring the final product's quality.",
+                    "Maintain and clean the machines under their responsibility."
+                ],
+                "manager": [
+                    "Supervise and coordinate activities across all sectors of the company (customer service, production, finance).",
+                    "Make strategic decisions aligned with the employer, aiming for business growth and sustainability.",
+                    "Ensure the achievement of goals, internal policies, and the satisfaction of customers and staff."
+                ]
             },
-            "declaration": "The <strong>EMPLOYEE</strong> declares to have read and agreed to all clauses of this term, committing to comply with them fully.",
+            "declaration": "The <strong>EMPLOYEE</strong> declares to have read and agreed to all clauses of this term, committing to fully comply with them.",
             "location_date": "Nampula, on {{date}}",
             "employee_signature": "The Employee",
             "employer_signature": "The Employer"
@@ -652,9 +688,12 @@
         }
     },
     "notes": {
+        "new_note": "New Note",
         "search": "Search notes...",
+        "favorite": "Favorite",
         "no_note_selected": "No note selected",
         "create_or_select_note": "Create a new note or select one from the list.",
-        "empty_note": "Empty note..."
+        "empty_note": "Empty note...",
+        "type_here": "Start typing here..."
     }
 }

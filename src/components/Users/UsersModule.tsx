@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../store/useUserStore';
 import { useStore } from '../../store/useStore';
 import { User } from '../../types';
-import { Users, LogIn, Lock, Unlock, Edit, KeyRound, Trash2, Plus, ArrowRightLeft } from 'lucide-react';
+import { LogIn, Lock, Unlock, Edit, KeyRound, Trash2, Plus, ArrowRightLeft } from 'lucide-react';
 import { clsx } from 'clsx';
 
 import Button from '../Common/Button';
@@ -19,6 +19,7 @@ import ModuleDataState from '../Common/ModuleDataState';
 import { CardGridSkeleton, TableSkeleton } from '../Common/SkeletonLoaders';
 import { useIncrementalList } from '../../hooks/useIncrementalList';
 import { storageService } from '../../services/storageService';
+import Avatar from '../Common/Avatar';
 
 const UsersModule: React.FC = () => {
   const { t } = useTranslation();
@@ -163,13 +164,11 @@ const UsersModule: React.FC = () => {
               <div key={user.id} className={clsx("bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-2xl border border-gray-200 dark:border-white/20 p-4 flex flex-col justify-between", user.isBlocked && 'opacity-60')}>
                 <div>
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
-                      {user.photoUrl ? (
-                        <img src={avatarCache[user.id] ?? user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="w-6 h-6 text-gray-500" />
-                      )}
-                    </div>
+                    <Avatar
+                      name={user.name}
+                      src={user.photoUrl ? avatarCache[user.id] ?? user.photoUrl : undefined}
+                      size="w-12 h-12"
+                    />
                     <div>
                       <h3 className="font-semibold text-gray-900 dark:text-white truncate">{user.name}</h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">{t(`users.roles.${user.role}`)}</p>
@@ -206,13 +205,11 @@ const UsersModule: React.FC = () => {
                   {users.map((user) => (
                     <tr key={user.id} className={clsx("hover:bg-gray-500/10", user.isBlocked && 'bg-red-500/10 opacity-70')}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
-                          {user.photoUrl ? (
-                            <img src={avatarCache[user.id] ?? user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <Users className="w-5 h-5 text-gray-500" />
-                          )}
-                        </div>
+                        <Avatar
+                          name={user.name}
+                          src={user.photoUrl ? avatarCache[user.id] ?? user.photoUrl : undefined}
+                          size="w-8 h-8"
+                        />
                         {user.name}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{user.email}</td>

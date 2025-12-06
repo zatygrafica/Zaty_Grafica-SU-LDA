@@ -14,9 +14,9 @@ import { generateId } from '../../utils/id';
 import Modal from '../Common/Modal';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
-import { User as UserIcon } from 'lucide-react';
 import Textarea from '../Common/Textarea';
 import { storageService } from '../../services/storageService';
+import Avatar from '../Common/Avatar';
 
 interface AttendanceFormModalProps {
   isOpen: boolean;
@@ -238,13 +238,11 @@ const AttendanceFormModal: React.FC<AttendanceFormModalProps> = ({ isOpen, onClo
     <Modal isOpen={isOpen} onClose={onClose} title="" size="lg">
       <div className="flex items-center justify-between mb-4 -mt-2">
         <div className="flex items-center gap-4">
-          {employee.photoUrl ? (
-            <img src={avatarUrl ?? employee.photoUrl} alt={employee.name} className="w-10 h-10 rounded-full object-cover" />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center">
-              <UserIcon className="w-5 h-5 text-gray-500" />
-            </div>
-          )}
+          <Avatar
+            name={employee.name}
+            src={employee.photoUrl ? avatarUrl ?? employee.photoUrl : undefined}
+            size="w-10 h-10"
+          />
           <div>
             <h2 className="text-lg font-bold text-gray-900 dark:text-white">
               {t('employees.register_event_for', { date: format(date, 'dd/MM/yyyy') })}
