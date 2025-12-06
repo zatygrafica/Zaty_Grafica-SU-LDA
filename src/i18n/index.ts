@@ -2,7 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 
 import en from './en.json';
-import pt from './pt.json';
+import pt from './locales/pt.json';
 import { normalizeUtf8Translations } from '../utils/encoding';
 
 const resources = {

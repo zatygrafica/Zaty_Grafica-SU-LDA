@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Bell, User, LogOut, Globe, Settings, Menu, Sun, Moon } from 'lucide-react';
@@ -6,6 +6,7 @@ import NotificationPanel from '../Notifications/NotificationPanel';
 import Clock from '../Common/Clock';
 import SyncStatusIndicator from './SyncStatusIndicator';
 import OnlineStatusIndicator from './OnlineStatusIndicator';
+import { storageService } from '../../services/storageService';
 
 interface HeaderProps {
   onModuleChange: (module: string) => void;
@@ -26,6 +27,8 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
   } = useStore();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const avatarCache = useRef<Record<string, string>>({});
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -43,6 +46,37 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
   };
+
+  useEffect(() => {
+    const path = currentUser?.photoUrl;
+    if (!path) {
+      setAvatarUrl(undefined);
+      return;
+    }
+
+    // Usa URL já cacheada (persistida) para evitar atraso na renderização
+    const cached = storageService.getCachedSignedUrl(path, 'profile_photos');
+    if (cached) {
+      avatarCache.current[path] = cached;
+      setAvatarUrl(cached);
+    }
+
+    // Busca/renova URL assinada em segundo plano
+    void storageService
+      .getSignedUrlCached(path, 300, 'profile_photos')
+      .then((url) => {
+        if (avatarCache.current[path] !== url) {
+          avatarCache.current[path] = url;
+          setAvatarUrl(url);
+        } else {
+          setAvatarUrl((prev) => prev ?? url);
+        }
+      })
+      .catch(() => {
+        // Mantém a última URL conhecida para evitar flicker
+        setAvatarUrl((prev) => prev ?? cached ?? path);
+      });
+  }, [currentUser?.photoUrl]);
 
   return (
     <header className="bg-white dark:bg-neutral-950/70 dark:backdrop-blur-lg border-b border-gray-200/50 dark:border-neutral-800/50 px-4 sm:px-6 py-3 sticky top-0 z-30">
@@ -121,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
             >
               <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center overflow-hidden">
                 {currentUser?.photoUrl ? (
-                  <img src={currentUser.photoUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                  <img src={avatarUrl ?? currentUser.photoUrl} alt={currentUser.name} className="w-full h-full object-cover" />
                 ) : (
                   <User className="w-4 h-4 text-white" />
                 )}

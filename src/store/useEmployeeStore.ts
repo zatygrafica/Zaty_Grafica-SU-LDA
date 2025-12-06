@@ -135,7 +135,7 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   addDocumentToEmployee: async (employeeId, document) => {
     const employee = get().getEmployeeById(employeeId);
     if (!employee) return undefined;
-    const updatedDocs = [...employee.documents, document];
+    const updatedDocs = [...(employee.documents ?? []), document];
     try {
       const updated = await dataProvider.update<Employee>('employees', employeeId, { documents: updatedDocs });
       if (!updated) return undefined;
@@ -156,7 +156,7 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   deleteDocumentFromEmployee: async (employeeId, documentId) => {
     const employee = get().getEmployeeById(employeeId);
     if (!employee) return undefined;
-    const updatedDocs = employee.documents.filter((doc) => doc.id !== documentId);
+    const updatedDocs = (employee.documents ?? []).filter((doc) => doc.id !== documentId);
     try {
       const updated = await dataProvider.update<Employee>('employees', employeeId, { documents: updatedDocs });
       if (!updated) return undefined;

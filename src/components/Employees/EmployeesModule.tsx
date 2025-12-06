@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
 import { useStore } from '../../store/useStore';
@@ -20,6 +20,7 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import ModuleDataState from '../Common/ModuleDataState';
 import { CardGridSkeleton, TableSkeleton } from '../Common/SkeletonLoaders';
 import { useLoadEmployeesOnMount } from '../../hooks/useModuleLoaders';
+import { storageService } from '../../services/storageService';
 
 const EmployeesModule: React.FC = () => {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ const EmployeesModule: React.FC = () => {
   const [isPaySalaryOpen, setIsPaySalaryOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [isPasswordPromptOpen, setIsPasswordPromptOpen] = useState(false);
+  const [avatarCache, setAvatarCache] = useState<Record<string, string>>({});
   
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
@@ -106,6 +108,43 @@ const EmployeesModule: React.FC = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [employees, searchTerm, t]);
 
+  // Carrega fotos rapidamente usando cache de URLs assinadas
+  useEffect(() => {
+    const cachedEntries = employees
+      .filter((e) => e.photoUrl && !avatarCache[e.id])
+      .map((e) => {
+        const cached = storageService.getCachedSignedUrl(e.photoUrl!, 'profile_photos');
+        return cached ? [e.id, cached] as const : null;
+      })
+      .filter((e): e is [string, string] => Boolean(e));
+
+    if (cachedEntries.length > 0) {
+      setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(cachedEntries) }));
+    }
+
+    const loadAvatars = async () => {
+      const entries = await Promise.all(
+        employees
+          .filter((e) => e.photoUrl && !avatarCache[e.id])
+          .map(async (e) => {
+            try {
+              const url = await storageService.getSignedUrlCached(e.photoUrl!, 900, 'profile_photos');
+              return [e.id, url] as const;
+            } catch (err) {
+              console.warn('Employee avatar URL fail', err);
+              return null;
+            }
+          })
+      );
+      const mapped = entries.filter((e): e is [string, string] => Boolean(e));
+      if (mapped.length > 0) {
+        setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(mapped) }));
+      }
+    };
+
+    void loadAvatars();
+  }, [employees, avatarCache]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -141,7 +180,7 @@ const EmployeesModule: React.FC = () => {
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
                     {employee.photoUrl ? (
-                      <img src={employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
+                      <img src={avatarCache[employee.id] ?? employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
                     ) : (
                       <UserIcon className="w-6 h-6 text-gray-500" />
                     )}
@@ -187,7 +226,7 @@ const EmployeesModule: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-gray-200/50 dark:bg-neutral-800/50 flex items-center justify-center overflow-hidden">
                         {employee.photoUrl ? (
-                          <img src={employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
+                          <img src={avatarCache[employee.id] ?? employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
                         ) : (
                           <UserIcon className="w-5 h-5 text-gray-500" />
                         )}

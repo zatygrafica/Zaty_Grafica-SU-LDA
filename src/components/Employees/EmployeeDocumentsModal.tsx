@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Employee, EmployeeDocument } from '../../types';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
@@ -8,6 +8,7 @@ import Button from '../Common/Button';
 import DocumentViewerModal from './DocumentViewerModal';
 import { generateId } from '../../utils/id';
 import { storageService } from '../../services/storageService';
+import { supabase } from '../../services/supabaseClient';
 
 interface EmployeeDocumentsModalProps {
   isOpen: boolean;
@@ -17,37 +18,48 @@ interface EmployeeDocumentsModalProps {
 
 const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({ isOpen, onClose, employee }) => {
   const { t } = useTranslation();
-  const { addDocumentToEmployee, deleteDocumentFromEmployee } = useEmployeeStore();
+  const employees = useEmployeeStore((state) => state.employees);
+  const { addDocumentToEmployee, deleteDocumentFromEmployee, listEmployees } = useEmployeeStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [documentType, setDocumentType] = useState('other');
   const [isViewerOpen, setIsViewerOpen] = useState(false);
   const [viewingDocument, setViewingDocument] = useState<EmployeeDocument | null>(null);
   const [signing, setSigning] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+
+  // Sempre usa a versão mais recente do funcionário (realtime)
+  const currentEmployee = useMemo(
+    () => employees.find((e) => e.id === employee.id) ?? employee,
+    [employees, employee]
+  );
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       try {
+        setUploading(true);
         const { path } = await storageService.upload(
           file,
           file.name,
           'employee_doc',
-          employee.id,
+          currentEmployee.id,
           { type: documentType },
           'employee_docs'
         );
-        const signedUrl = await storageService.getSignedUrl(path, 60, 'employee_docs');
         const newDocument: EmployeeDocument = {
           id: generateId(),
           name: file.name,
           type: documentType,
-          url: signedUrl,
+          url: path, // armazenamos o path; a URL assinada é gerada na visualização
           path,
           uploadedAt: new Date(),
         };
-        await addDocumentToEmployee(employee.id, newDocument);
+        await addDocumentToEmployee(currentEmployee.id, newDocument);
       } catch (error) {
         console.error('Falha ao enviar documento', error);
+      } finally {
+        setUploading(false);
       }
     }
   };
@@ -57,24 +69,71 @@ const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({ isOpen,
   };
 
   const handleViewDocument = async (doc: EmployeeDocument) => {
+    // Abre modal com doc imediatamente (usa path, se houver)
+    const baseDoc = doc.path ? { ...doc, url: doc.path } : doc;
+    setViewingDocument(baseDoc);
+    setIsViewerOpen(true);
     setSigning(true);
     try {
-      const signedUrl = await storageService.getSignedUrl(doc.path ?? doc.url, 60, 'employee_docs');
-      setViewingDocument({ ...doc, url: signedUrl });
+      const signedUrl = await storageService.getSignedUrlCached(doc.path ?? doc.url, 900, 'employee_docs');
+      setViewingDocument({ ...baseDoc, url: signedUrl });
     } catch (error) {
       console.error('Falha ao abrir documento', error);
-      setViewingDocument(doc);
     } finally {
       setSigning(false);
     }
-    setIsViewerOpen(true);
+  };
+
+  const handleDeleteDocument = async (docId: string) => {
+    try {
+      setDeletingDocId(docId);
+      await deleteDocumentFromEmployee(currentEmployee.id, docId);
+    } catch (error) {
+      console.error('Falha ao excluir documento', error);
+    } finally {
+      setDeletingDocId((prev) => (prev === docId ? null : prev));
+    }
   };
 
   const documentTypeOptions = ['bi', 'nuit', 'cv', 'criminal_record', 'other'];
 
+  // Realtime: escuta mudanças na linha do funcionário e recarrega lista
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!currentEmployee?.id) return;
+
+    const channel = supabase
+      .channel(`employee-docs-${currentEmployee.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'employees', filter: `id=eq.${currentEmployee.id}` },
+        async () => {
+          try {
+            await listEmployees(true);
+          } catch (error) {
+            console.error('Falha ao atualizar documentos em tempo real', error);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [currentEmployee?.id, isOpen, listEmployees]);
+
+  // Título com fallback seguro
+  const translatedTitle = t('employees.documents_title', { name: currentEmployee.name });
+  const documentsTitle =
+    translatedTitle && !translatedTitle.includes('{name}')
+      ? translatedTitle
+      : `Documentos de ${currentEmployee.name}`;
+
+  const docs = currentEmployee.documents ?? [];
+
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title={t('employees.documents_title', { name: employee.name })} size="xl">
+      <Modal isOpen={isOpen} onClose={onClose} title={documentsTitle} size="xl">
         <div className="space-y-4">
           <div className="flex flex-col md:flex-row gap-4 p-4 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
             <div className="flex-grow">
@@ -90,15 +149,17 @@ const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({ isOpen,
               </select>
             </div>
             <div className="flex-shrink-0 self-end">
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.png,.jpg,.jpeg" />
-              <Button onClick={handleUploadClick} icon={Upload}>{t('employees.upload_document')}</Button>
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="*/*" />
+              <Button onClick={handleUploadClick} icon={Upload} disabled={uploading || signing}>
+                {uploading ? t('common.loading', { defaultValue: 'Carregando...' }) : t('employees.upload_document')}
+              </Button>
             </div>
           </div>
 
           <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-            {employee.documents.length > 0 ? (
+            {docs.length > 0 ? (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-                {employee.documents.map(doc => (
+                {docs.map(doc => (
                   <li key={doc.id} className="py-3 flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <File className="w-5 h-5 text-gray-400" />
@@ -111,7 +172,15 @@ const EmployeeDocumentsModal: React.FC<EmployeeDocumentsModalProps> = ({ isOpen,
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button size="sm" variant="ghost" icon={Eye} onClick={() => handleViewDocument(doc)} title={t('common.view')} />
-                      <Button size="sm" variant="ghost" className="text-red-500" icon={Trash2} onClick={() => { void deleteDocumentFromEmployee(employee.id, doc.id); }} title={t('common.delete')} />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-red-500"
+                        icon={Trash2}
+                        disabled={deletingDocId === doc.id}
+                        onClick={() => { void handleDeleteDocument(doc.id); }}
+                        title={t('common.delete')}
+                      />
                     </div>
                   </li>
                 ))}

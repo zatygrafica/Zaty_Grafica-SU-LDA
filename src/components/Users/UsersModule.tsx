@@ -44,15 +44,29 @@ const UsersModule: React.FC = () => {
     return () => unsubscribe();
   }, [listUsers, subscribeToRealtime]);
 
-  // Resolve signed URLs for avatars when list changes
+  // Resolve signed URLs para avatares com cache em memoria (rapido)
   useEffect(() => {
+    // 1) Preenche imediatamente com URLs ja cacheadas (evita atraso visual)
+    const cachedEntries = users
+      .filter((u) => u.photoUrl && !avatarCache[u.id])
+      .map((u) => {
+        const cached = storageService.getCachedSignedUrl(u.photoUrl!, 'profile_photos');
+        return cached ? [u.id, cached] as const : null;
+      })
+      .filter((e): e is [string, string] => Boolean(e));
+
+    if (cachedEntries.length > 0) {
+      setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(cachedEntries) }));
+    }
+
+    // 2) Busca assincrona para garantir URL atualizada/renovada
     const loadAvatars = async () => {
       const entries = await Promise.all(
         users
           .filter((u) => u.photoUrl && !avatarCache[u.id])
           .map(async (u) => {
             try {
-              const url = await storageService.getSignedUrl(u.photoUrl!, 300, 'profile_photos');
+              const url = await storageService.getSignedUrlCached(u.photoUrl!, 900, 'profile_photos');
               return [u.id, url] as const;
             } catch (e) {
               console.warn('Avatar signed URL fail', e);
@@ -273,4 +287,6 @@ const UsersModule: React.FC = () => {
 };
 
 export default UsersModule;
+
+
 

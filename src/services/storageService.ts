@@ -3,6 +3,33 @@ import type { Attachment } from '../types';
 import { convertKeysToCamelCase } from '../utils/case';
 
 const DEFAULT_BUCKET = 'app-files';
+const signedUrlCache: Record<string, { url: string; expiresAt: number }> = {};
+
+const cacheKey = (bucket: string, path: string) => `${bucket}:${path}`;
+const nowSec = () => Math.floor(Date.now() / 1000);
+const loadPersistedCache = () => {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    const raw = sessionStorage.getItem('storage_signed_urls');
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, { url: string; expiresAt: number }>;
+      Object.assign(signedUrlCache, parsed);
+    }
+  } catch {
+    /* ignore */
+  }
+};
+
+const persistCache = () => {
+  if (typeof sessionStorage === 'undefined') return;
+  try {
+    sessionStorage.setItem('storage_signed_urls', JSON.stringify(signedUrlCache));
+  } catch {
+    /* ignore */
+  }
+};
+
+loadPersistedCache();
 
 const sanitizePath = (path: string) => path.replace(/\/\/+/g, '/').replace(/^\//, '');
 
@@ -25,9 +52,10 @@ export const storageService = {
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(objectPath, file, {
-        upsert: false,
+        // Permite substituir arquivo com mesmo nome, evitando erros de conflito
+        upsert: true,
         cacheControl: '3600',
-        contentType: (file as File).type || undefined,
+        contentType: (file as File).type || 'application/octet-stream',
       });
 
     if (uploadError) {
@@ -65,6 +93,32 @@ export const storageService = {
     const { data, error } = await supabase.storage.from(bucket).createSignedUrl(sanitized, expiresInSeconds);
     if (error) throw error;
     return data.signedUrl;
+  },
+
+  async getSignedUrlCached(path: string, expiresInSeconds = 300, bucket: string = DEFAULT_BUCKET) {
+    const sanitized = sanitizePath(path);
+    const key = cacheKey(bucket, sanitized);
+    const entry = signedUrlCache[key];
+    const now = nowSec();
+    if (entry && entry.expiresAt > now + 30) {
+      return entry.url;
+    }
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(sanitized, expiresInSeconds);
+    if (error) throw error;
+    signedUrlCache[key] = { url: data.signedUrl, expiresAt: now + expiresInSeconds };
+    persistCache();
+    return data.signedUrl;
+  },
+
+  getCachedSignedUrl(path: string, bucket: string = DEFAULT_BUCKET): string | undefined {
+    const sanitized = sanitizePath(path);
+    const key = cacheKey(bucket, sanitized);
+    const entry = signedUrlCache[key];
+    const now = nowSec();
+    if (entry && entry.expiresAt > now + 30) {
+      return entry.url;
+    }
+    return undefined;
   },
 
   async remove(path: string, bucket: string = DEFAULT_BUCKET) {

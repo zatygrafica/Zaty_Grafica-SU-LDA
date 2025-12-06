@@ -63,7 +63,7 @@ const MyProfileSettings: React.FC = () => {
       setPhotoPath(currentUser.photoUrl ?? null);
       if (currentUser.photoUrl) {
         void storageService
-          .getSignedUrl(currentUser.photoUrl)
+          .getSignedUrlCached(currentUser.photoUrl, 300, 'profile_photos')
           .then(setPhotoPreview)
           .catch(() => setPhotoPreview(null));
       } else {
@@ -74,41 +74,44 @@ const MyProfileSettings: React.FC = () => {
 
   const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const { path, attachment } = await storageService.upload(
-          file,
-          file.name,
-          'user',
-          currentUser?.id,
-          { source: 'profile_photo' },
-          'profile_photos'
-        );
-        const signedUrl = await storageService.getSignedUrl(path, 60, 'profile_photos');
-        setPhotoPath(path);
-        setValue('photoUrl', path);
-        setPhotoPreview(signedUrl);
+    if (!file) return;
 
-        // feedback
-        addNotification({
-          id: generateId(),
-          type: 'success',
-          title: t('common.success'),
-          message: t('users.profile_photo') + ' atualizada.',
-          read: false,
-          createdAt: new Date(),
-        });
-      } catch (error) {
-        console.error('Upload de foto falhou', error);
-        addNotification({
-          id: generateId(),
-          type: 'error',
-          title: t('common.error'),
-          message: 'Falha ao enviar a foto. Tente novamente.',
-          read: false,
-          createdAt: new Date(),
-        });
-      }
+    // preview imediato enquanto faz upload
+    const tempUrl = URL.createObjectURL(file);
+    setPhotoPreview(tempUrl);
+
+    try {
+      const { path } = await storageService.upload(
+        file,
+        file.name,
+        'user',
+        currentUser?.id,
+        { source: 'profile_photo' },
+        'profile_photos'
+      );
+      const signedUrl = await storageService.getSignedUrlCached(path, 300, 'profile_photos');
+      setPhotoPath(path);
+      setValue('photoUrl', path);
+      setPhotoPreview(signedUrl);
+
+      addNotification({
+        id: generateId(),
+        type: 'success',
+        title: t('common.success'),
+        message: t('users.profile_photo') + ' atualizada.',
+        read: false,
+        createdAt: new Date(),
+      });
+    } catch (error) {
+      console.error('Upload de foto falhou', error);
+      addNotification({
+        id: generateId(),
+        type: 'error',
+        title: t('common.error'),
+        message: 'Falha ao enviar a foto. Tente novamente.',
+        read: false,
+        createdAt: new Date(),
+      });
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Employee } from '../../types';
 import Modal from '../Common/Modal';
@@ -7,6 +7,7 @@ import { Printer, User } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { format } from 'date-fns';
+import { storageService } from '../../services/storageService';
 
 interface EmployeeSheetModalProps {
   isOpen: boolean;
@@ -17,6 +18,22 @@ interface EmployeeSheetModalProps {
 const EmployeeSheetModal: React.FC<EmployeeSheetModalProps> = ({ isOpen, onClose, employee }) => {
   const { t } = useTranslation();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+
+  // Avatar com cache para carregamento imediato
+  useEffect(() => {
+    const path = employee?.photoUrl;
+    if (!path) {
+      setAvatarUrl(undefined);
+      return;
+    }
+    const cached = storageService.getCachedSignedUrl(path, 'profile_photos');
+    if (cached) setAvatarUrl(cached);
+    void storageService
+      .getSignedUrlCached(path, 900, 'profile_photos')
+      .then((url) => setAvatarUrl(url))
+      .catch(() => setAvatarUrl((prev) => prev ?? path));
+  }, [employee?.photoUrl]);
 
   const handlePrint = () => {
     if (sheetRef.current) {
@@ -43,7 +60,7 @@ const EmployeeSheetModal: React.FC<EmployeeSheetModalProps> = ({ isOpen, onClose
         <div className="flex flex-col md:flex-row items-center gap-8">
           <div className="w-32 h-32 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-4 border-gray-300">
             {employee.photoUrl ? (
-              <img src={employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
+              <img src={avatarUrl ?? employee.photoUrl} alt={employee.name} className="w-full h-full object-cover" />
             ) : (
               <User className="w-20 h-20 text-gray-400" />
             )}

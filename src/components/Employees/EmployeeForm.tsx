@@ -99,10 +99,12 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
         });
         setPhotoPath(employee.photoUrl ?? null);
         if (employee.photoUrl) {
+          const cached = storageService.getCachedSignedUrl(employee.photoUrl, 'profile_photos');
+          if (cached) setPhotoPreview(cached);
           void storageService
-            .getSignedUrl(employee.photoUrl, 60, 'profile_photos')
+            .getSignedUrlCached(employee.photoUrl, 300, 'profile_photos')
             .then(setPhotoPreview)
-            .catch(() => setPhotoPreview(null));
+            .catch(() => setPhotoPreview((prev) => prev ?? null));
         } else {
           setPhotoPreview(null);
         }

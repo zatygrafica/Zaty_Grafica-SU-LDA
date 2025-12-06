@@ -18,6 +18,7 @@ import { clsx } from 'clsx';
 import { Employee, Delay } from '../../types';
 import { useAttendanceStore } from '../../store/useAttendanceStore';
 import { useStore } from '../../store/useStore';
+import { storageService } from '../../services/storageService';
 
 import Modal from '../Common/Modal';
 import Button from '../Common/Button';
@@ -45,6 +46,7 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClose, empl
   const [isPasswordPromptOpen, setIsPasswordPromptOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   const monthEvents = useMemo(() => getEventsForMonth(employee.id, currentDate), [getEventsForMonth, employee.id, currentDate]);
 
@@ -68,6 +70,21 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClose, empl
     setEventToDelete(eventId);
     setIsPasswordPromptOpen(true);
   };
+
+  // Avatar com cache para carregamento imediato
+  useEffect(() => {
+    const path = employee?.photoUrl;
+    if (!path) {
+      setAvatarUrl(undefined);
+      return;
+    }
+    const cached = storageService.getCachedSignedUrl(path, 'profile_photos');
+    if (cached) setAvatarUrl(cached);
+    void storageService
+      .getSignedUrlCached(path, 900, 'profile_photos')
+      .then((url) => setAvatarUrl(url))
+      .catch(() => setAvatarUrl((prev) => prev ?? path));
+  }, [employee?.photoUrl]);
   
   const proceedToDelete = () => {
     setIsPasswordPromptOpen(false);
@@ -105,9 +122,9 @@ const AttendanceModal: React.FC<AttendanceModalProps> = ({ isOpen, onClose, empl
       <Modal isOpen={isOpen} onClose={onClose} title="" size="2xl">
         <div className="flex items-center justify-between mb-6 -mt-2">
             <div className="flex items-center gap-4">
-              {employee.photoUrl ? (
-                <img src={employee.photoUrl} alt={employee.name} className="w-12 h-12 rounded-full object-cover" />
-              ) : (
+            {employee.photoUrl ? (
+              <img src={avatarUrl ?? employee.photoUrl} alt={employee.name} className="w-12 h-12 rounded-full object-cover" />
+            ) : (
                 <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center">
                   <UserIcon className="w-6 h-6 text-gray-500" />
                 </div>

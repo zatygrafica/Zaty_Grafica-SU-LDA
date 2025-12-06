@@ -86,6 +86,12 @@
   p, li {
     orphans: 3;
     widows: 3;
+    line-height: 1.2 !important;
+    margin-bottom: 0.35em !important;
+  }
+
+  .printable-content {
+    line-height: 1.2 !important;
   }
 
   /* 8. Style table headers for print */

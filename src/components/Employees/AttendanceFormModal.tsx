@@ -16,6 +16,7 @@ import Button from '../Common/Button';
 import Input from '../Common/Input';
 import { User as UserIcon } from 'lucide-react';
 import Textarea from '../Common/Textarea';
+import { storageService } from '../../services/storageService';
 
 interface AttendanceFormModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ const AttendanceFormModal: React.FC<AttendanceFormModalProps> = ({ isOpen, onClo
   const [activeTab, setActiveTab] = useState<'delay' | 'absence'>('delay');
   const [delaySubmitting, setDelaySubmitting] = useState(false);
   const [absenceSubmitting, setAbsenceSubmitting] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
 
   // --- Delay Form ---
   const delaySchema = yup.object().shape({
@@ -78,6 +80,21 @@ const AttendanceFormModal: React.FC<AttendanceFormModalProps> = ({ isOpen, onClo
       setDelayDeduction(0);
     }
   }, [watchedActualTime, employee, date]);
+
+  // Avatar com cache para carregamento imediato
+  useEffect(() => {
+    const path = employee?.photoUrl;
+    if (!path) {
+      setAvatarUrl(undefined);
+      return;
+    }
+    const cached = storageService.getCachedSignedUrl(path, 'profile_photos');
+    if (cached) setAvatarUrl(cached);
+    void storageService
+      .getSignedUrlCached(path, 900, 'profile_photos')
+      .then((url) => setAvatarUrl(url))
+      .catch(() => setAvatarUrl((prev) => prev ?? path));
+  }, [employee?.photoUrl]);
 
   const notify = (type: NotificationType, baseMessage: string, detail?: string) => {
     const fullMessage = detail && type === 'error' ? `${baseMessage} ${detail}` : baseMessage;
@@ -222,7 +239,7 @@ const AttendanceFormModal: React.FC<AttendanceFormModalProps> = ({ isOpen, onClo
       <div className="flex items-center justify-between mb-4 -mt-2">
         <div className="flex items-center gap-4">
           {employee.photoUrl ? (
-            <img src={employee.photoUrl} alt={employee.name} className="w-10 h-10 rounded-full object-cover" />
+            <img src={avatarUrl ?? employee.photoUrl} alt={employee.name} className="w-10 h-10 rounded-full object-cover" />
           ) : (
             <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center">
               <UserIcon className="w-5 h-5 text-gray-500" />
