@@ -6,8 +6,9 @@ begin;
 
 alter table if exists public.tasks enable row level security;
 
--- Remover política antiga restritiva
+-- Remover políticas antigas
 drop policy if exists tasks_access on public.tasks;
+drop policy if exists tasks_read_write on public.tasks;
 
 -- Política simples para qualquer usuário autenticado
 create policy tasks_read_write

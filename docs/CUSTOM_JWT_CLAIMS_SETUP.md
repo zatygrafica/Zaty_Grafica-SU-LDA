@@ -208,13 +208,18 @@ async function updateUserRole(userId: string, newRole: string) {
 **Verificar:**
 1. ✅ Hook está habilitado no dashboard?
 2. ✅ Função `custom_access_token_hook` existe no schema `public`?
-3. ✅ Fez logout e login novamente após configurar?
+3. ✅ Função está marcada como `VOLATILE` (não `STABLE`)?
+4. ✅ Fez logout e login novamente após configurar?
 
 **Comando para verificar:**
 ```sql
-SELECT proname, pronamespace::regnamespace
+SELECT
+  proname,
+  pronamespace::regnamespace as schema,
+  provolatile as volatility
 FROM pg_proc
 WHERE proname = 'custom_access_token_hook';
+-- Resultado esperado: volatility = 'v' (VOLATILE)
 ```
 
 ### Policy ainda não funciona
