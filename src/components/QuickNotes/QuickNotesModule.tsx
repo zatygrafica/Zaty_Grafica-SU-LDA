@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNotesStore } from '../../store/useNotesStore';
+import { useStore } from '../../store/useStore';
 import { Note } from '../../types';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Plus, Search, Star, Trash2, FileText } from 'lucide-react';
@@ -15,6 +16,7 @@ import ConfirmationModal from '../Common/ConfirmationModal';
 const QuickNotesModule: React.FC = () => {
   const { t } = useTranslation();
   const { notes, addNote, updateNote, deleteNote, toggleFavorite, listNotes, subscribeToRealtime } = useNotesStore();
+  const addNotification = useStore((state) => state.addNotification);
   
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(notes.length > 0 ? notes[0].id : null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -52,8 +54,17 @@ const QuickNotesModule: React.FC = () => {
   }, [filteredNotes, selectedNoteId]);
 
   const handleAddNote = async () => {
-    const newNote = await addNote();
-    setSelectedNoteId(newNote.id);
+    try {
+      const newNote = await addNote();
+      setSelectedNoteId(newNote.id);
+    } catch (error) {
+      addNotification({
+        id: crypto.randomUUID(),
+        type: 'error',
+        message: (error as Error).message ?? t('errors.loading_message'),
+        createdAt: new Date(),
+      });
+    }
   };
 
   const handleDeleteRequest = (id: string) => {

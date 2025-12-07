@@ -1,9 +1,9 @@
 import { create } from 'zustand';
 import type { User } from '../types';
-import { supabaseAdmin } from '../services/supabaseAdminClient';
 import { supabase } from '../services/supabaseClient';
-import { convertKeysToCamelCase, convertKeysToSnakeCase } from '../utils/case';
+import { convertKeysToCamelCase } from '../utils/case';
 import { useStore } from './useStore';
+import { env } from '../config/env';
 
 type UserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
 type UserOperationResult = { success: boolean; message: string; user?: User };
@@ -27,6 +27,64 @@ const normalizeUser = (user: User): User => ({
   createdAt: user.createdAt ? new Date(user.createdAt) : new Date(),
   updatedAt: user.updatedAt ? new Date(user.updatedAt) : new Date(),
 });
+
+type ApiUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: User['role'];
+  permissions: string[];
+  photoUrl?: string;
+  isBlocked?: boolean;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+};
+
+type ManageUsersAction = 'list' | 'create' | 'update' | 'delete' | 'impersonate';
+
+const functionsBaseUrl = env.supabase.url ? `${env.supabase.url}/functions/v1/manage-users` : null;
+
+const mapApiUser = (apiUser: ApiUser): User => ({
+  id: apiUser.id,
+  name: apiUser.name || apiUser.email || 'Unnamed User',
+  email: apiUser.email,
+  role: apiUser.role ?? 'user',
+  permissions: Array.isArray(apiUser.permissions) ? apiUser.permissions : [],
+  photoUrl: apiUser.photoUrl,
+  isBlocked: apiUser.isBlocked ?? false,
+  createdAt: apiUser.createdAt ? new Date(apiUser.createdAt) : new Date(),
+  updatedAt: apiUser.updatedAt ? new Date(apiUser.updatedAt) : new Date(),
+});
+
+const callManageUsers = async <T>(action: ManageUsersAction, payload?: Record<string, unknown>): Promise<T> => {
+  if (!functionsBaseUrl) {
+    throw new Error('Supabase URL is not configured');
+  }
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !sessionData?.session?.access_token) {
+    throw new Error('unauthorized');
+  }
+
+  const response = await fetch(functionsBaseUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${sessionData.session.access_token}`,
+    },
+    body: JSON.stringify({ action, payload }),
+  });
+
+  const parsed = (await response.json().catch(() => ({}))) as { data?: T; error?: string };
+
+  if (response.status === 401) throw new Error('unauthorized');
+  if (response.status === 403) throw new Error('forbidden');
+  if (!response.ok || parsed.error) {
+    throw new Error(parsed.error || 'User function failed');
+  }
+
+  return parsed.data as T;
+};
 
 const mapProfileToUser = (profile: ProfileRecord): User => ({
   id: profile.id,
@@ -69,15 +127,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (get().loading) return get().users;
     set({ loading: true, hasLoaded: false, error: null });
     try {
-      // Sempre busca todos os perfis direto do Supabase
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (error) throw error;
-      const profiles = convertKeysToCamelCase((data ?? []) as ProfileRecord[]);
-      const normalized = profiles.map((profile) => normalizeUser(mapProfileToUser(profile)));
+      const apiUsers = await callManageUsers<ApiUser[]>('list');
+      const normalized = apiUsers.map((u) => normalizeUser(mapApiUser(u)));
       set({ users: normalized, loading: false, hasLoaded: true });
       return normalized;
     } catch (error) {
-      set({ loading: false, hasLoaded: false, error: (error as Error).message });
+      const message = (error as Error).message;
+      set({ loading: false, hasLoaded: false, error: message });
       throw error;
     }
   },
@@ -99,63 +155,26 @@ export const useUserStore = create<UserState>((set, get) => ({
 
     try {
       const permissions = userData.permissions ?? (userData.role === 'admin' ? ['*'] : ['read:own']);
-      const now = new Date().toISOString();
-      const { data, error } = await supabaseAdmin.auth.admin.createUser({
+      const apiUser = await callManageUsers<ApiUser>('create', {
         email: userData.email,
         password: userData.password,
-        email_confirm: true,
-        user_metadata: {
-          name: userData.name,
-          role: userData.role,
-          permissions,
-          photo_url: userData.photoUrl,
-        },
+        name: userData.name,
+        role: userData.role,
+        permissions,
+        photoUrl: userData.photoUrl,
+        isBlocked: userData.isBlocked,
       });
 
-      if (error || !data.user) {
-        return { success: false, message: error?.message ?? 'user_create_failed' };
-      }
-
-      const authUser = data.user;
-
-      await supabaseAdmin.from('profiles').upsert(
-        {
-          id: authUser.id,
-          email: authUser.email,
-          full_name: userData.name,
-          role: userData.role,
-          permissions,
-          avatar_url: userData.photoUrl,
-          created_at: now,
-          updated_at: now,
-        },
-        { onConflict: 'id' }
-      );
-
-      const { data: fetchedProfile, error: fetchError } = await supabase.from('profiles').select('*').eq('id', authUser.id).maybeSingle();
-      if (fetchError) throw fetchError;
-      const createdProfile = fetchedProfile
-        ? convertKeysToCamelCase(fetchedProfile as ProfileRecord)
-        : undefined;
-      const normalized = createdProfile
-        ? normalizeUser(mapProfileToUser(createdProfile))
-        : normalizeUser({
-            id: authUser.id,
-            name: userData.name,
-            email: authUser.email ?? '',
-            role: userData.role,
-            permissions,
-            photoUrl: userData.photoUrl,
-            isBlocked: false,
-            createdAt: new Date(now),
-            updatedAt: new Date(now),
-          } as User);
-
+      const normalized = normalizeUser(mapApiUser(apiUser));
       set({ users: [...users, normalized], error: null });
       useStore.getState().addAuditLog({ action: 'create', resourceType: 'User', resourceId: normalized.id });
       return { success: true, message: 'user_created_success', user: normalized };
     } catch (error) {
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      set({ error: message });
+      if (message === 'unauthorized' || message === 'forbidden') {
+        return { success: false, message: 'forbidden' };
+      }
       throw error;
     }
   },
@@ -175,24 +194,13 @@ export const useUserStore = create<UserState>((set, get) => ({
     }
 
     const action = userData.password ? 'change_password' : 'update';
-    const payload: Partial<User> & { avatarUrl?: string; fullName?: string } = { ...userData, updatedAt: new Date() };
-    // Garantir que avatar_url seja preenchido com o path salvo em photoUrl
-    if (payload.photoUrl && !payload.avatarUrl) {
-      payload.avatarUrl = payload.photoUrl;
-      delete (payload as Partial<User>).photoUrl; // evita coluna photo_url inexistente
-    }
-    // Mapear nome para full_name (coluna existente em profiles)
-    if (payload.name) {
-      payload.fullName = payload.name;
-      delete (payload as Partial<User>).name;
-    }
 
     try {
-      const snakePayload = convertKeysToSnakeCase(payload);
-      const { data, error } = await supabase.from('profiles').update(snakePayload).eq('id', id).select().maybeSingle();
-      if (error) throw error;
-      if (!data) return { success: false, message: 'user_not_found' };
-      const normalized = normalizeUser(mapProfileToUser(convertKeysToCamelCase(data) as ProfileRecord));
+      const apiUser = await callManageUsers<ApiUser>('update', {
+        id,
+        ...userData,
+      });
+      const normalized = normalizeUser(mapApiUser(apiUser));
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? normalized : user)),
         error: null,
@@ -200,7 +208,11 @@ export const useUserStore = create<UserState>((set, get) => ({
       useStore.getState().addAuditLog({ action, resourceType: 'User', resourceId: id });
       return { success: true, message: userData.password ? 'password_changed_success' : 'user_updated_success', user: normalized };
     } catch (error) {
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      set({ error: message });
+      if (message === 'unauthorized' || message === 'forbidden') {
+        return { success: false, message: 'forbidden' };
+      }
       throw error;
     }
   },
@@ -210,11 +222,8 @@ export const useUserStore = create<UserState>((set, get) => ({
     if (!user) return undefined;
     const payload = { isBlocked: !user.isBlocked, updatedAt: new Date() };
     try {
-      const snakePayload = convertKeysToSnakeCase(payload);
-      const { data, error } = await supabase.from('profiles').update(snakePayload).eq('id', id).select().maybeSingle();
-      if (error) throw error;
-      if (!data) return undefined;
-      const normalized = normalizeUser(mapProfileToUser(convertKeysToCamelCase(data) as ProfileRecord));
+      const apiUser = await callManageUsers<ApiUser>('update', { id, ...payload });
+      const normalized = normalizeUser(mapApiUser(apiUser));
       const action = user.isBlocked ? 'unblock' : 'block';
       set((state) => ({
         users: state.users.map((u) => (u.id === id ? normalized : u)),
@@ -223,22 +232,23 @@ export const useUserStore = create<UserState>((set, get) => ({
       useStore.getState().addAuditLog({ action, resourceType: 'User', resourceId: id });
       return normalized;
     } catch (error) {
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      set({ error: message });
       throw error;
     }
   },
 
   deleteUserById: async (id) => {
     try {
-      await supabaseAdmin.auth.admin.deleteUser(id);
-      await supabaseAdmin.from('profiles').delete().eq('id', id);
+      await callManageUsers('delete', { id });
       set((state) => ({
         users: state.users.filter((user) => user.id !== id),
         error: null,
       }));
       useStore.getState().addAuditLog({ action: 'delete', resourceType: 'User', resourceId: id });
     } catch (error) {
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      set({ error: message });
       throw error;
     }
   },

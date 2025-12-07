@@ -1,9 +1,10 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
 import type { Note } from '../types';
 import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
 import { supabase } from '../services/supabaseClient';
 import { convertKeysToCamelCase } from '../utils/case';
 import { useStore } from './useStore';
+import { useAuthStore } from './useAuthStore';
 
 interface NotesState {
   notes: Note[];
@@ -51,15 +52,18 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   getNoteById: (id) => get().notes.find((note) => note.id === id),
 
   addNote: async () => {
-    const { addAuditLog } = useStore.getState();
+    const { addAuditLog, addNotification } = useStore.getState();
+    const { user, session } = useAuthStore.getState();
+
     const newNote: Note = {
       id: crypto.randomUUID(),
-      title: 'Nova Anotação',
+      title: 'Nova anotação',
       content: '',
       isFavorite: false,
-      completed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
+      ...(user?.id ? { createdBy: user.id } : {}),
+      ...(session?.user?.app_metadata?.org_id ? { ownerOrg: session.user.app_metadata.org_id as string } : {}),
     };
     try {
       const created = await dataProvider.create<Note>('notes', newNote);
@@ -68,7 +72,14 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       addAuditLog({ action: 'create', resourceType: 'Note', resourceId: normalized.id });
       return normalized;
     } catch (error) {
-      set({ error: (error as Error).message });
+      const message = (error as Error).message;
+      set({ error: message });
+      addNotification({
+        id: crypto.randomUUID(),
+        type: 'error',
+        message,
+        createdAt: new Date(),
+      });
       throw error;
     }
   },
@@ -160,3 +171,5 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     };
   },
 }));
+
+

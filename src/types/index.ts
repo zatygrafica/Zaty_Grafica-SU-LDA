@@ -356,6 +356,8 @@ export interface Note {
   title: string;
   content: string;
   isFavorite: boolean;
+  createdBy?: string;
+  ownerOrg?: string;
   dueDate?: Date;
   reminderAt?: Date;
   completed?: boolean;

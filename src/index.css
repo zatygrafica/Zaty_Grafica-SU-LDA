@@ -1,15 +1,46 @@
-@tailwind base;
+﻿@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    /* Tipografia adaptativa conforme viewport */
+    font-size: clamp(14px, 0.9vw + 10px, 17px);
+    
+    --app-padding-x: 0px;
+  }
+
+  /* Estrutura fluida do app */
+  #root {
+    min-height: 100vh;
+    width: 100%;
+  }
+
   body {
     @apply font-sans text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-neutral-950;
+    margin: 0;
+    padding-inline: var(--app-padding-x);
   }
 
   html.dark body {
     @apply bg-dark-gradient;
     background-repeat: no-repeat;
+  }
+
+
+
+  /* Telas médias (1366/1280) reduzem padding para evitar corte */
+  @media (max-width: 1366px) {
+    :root { font-size: 15px; }
+    body { padding-inline: clamp(10px, 1.5vw, 16px); }
+  }
+
+  @media (max-width: 1024px) { :root { font-size: 14.5px; } }
+
+  @media (max-width: 768px) { :root { font-size: 14px; } }
+
+  body {
+    @apply font-sans text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-neutral-950;
   }
 
   /* Custom Scrollbar Styles */
@@ -41,3 +72,5 @@
     background-color: rgba(156, 163, 175, 0.4); /* gray-400 @ 40% opacity */
   }
 }
+
+
