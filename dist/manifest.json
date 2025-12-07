@@ -1,7 +1,7 @@
-{
-  "name": "ZATY GRÁFICA - Sistema de Gestão",
-  "short_name": "ZATY GRÁFICA",
-  "description": "Sistema completo de gestão para ZATY GRÁFICA",
+﻿{
+  "name": "Zaty Gráfica",
+  "short_name": "Zaty Gráfica",
+  "description": "Sistema completo de gestão para Zaty Gráfica",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -23,3 +23,4 @@
     }
   ]
 }
+

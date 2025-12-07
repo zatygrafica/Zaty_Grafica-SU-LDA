@@ -490,8 +490,8 @@ ALTER TABLE public.tasks
   ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT timezone('utc', now());
 
 ALTER TABLE public.tasks
-  ALTER COLUMN created at SET DEFAULT timezone('utc', now()),
-  ALTER COLUMN updated at SET DEFAULT timezone('utc', now());
+  ALTER COLUMN created_at SET DEFAULT timezone('utc', now()),
+  ALTER COLUMN updated_at SET DEFAULT timezone('utc', now());
 
 DO $$
 BEGIN
@@ -553,7 +553,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'attendance_events' AND column_name = 'owner_id'
   ) AND NOT EXISTS (
-    SELECT 1 FROM information_schema columns
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'attendance_events' AND column_name = 'created_by'
   ) THEN
     ALTER TABLE public.attendance_events RENAME COLUMN owner_id TO created_by;
@@ -571,8 +571,8 @@ ALTER TABLE public.attendance_events
   ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT timezone('utc', now());
 
 ALTER TABLE public.attendance_events
-  ALTER COLUMN created at SET DEFAULT timezone('utc', now()),
-  ALTER COLUMN updated at SET DEFAULT timezone('utc', now());
+  ALTER COLUMN created_at SET DEFAULT timezone('utc', now()),
+  ALTER COLUMN updated_at SET DEFAULT timezone('utc', now());
 
 DO $$
 BEGIN
@@ -624,10 +624,10 @@ END$$;
 DO $$
 BEGIN
   IF EXISTS (
-    SELECT 1 FROM information_schema columns
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'generated_documents' AND column_name = 'owner_id'
   ) AND NOT EXISTS (
-    SELECT 1 FROM information_schema columns
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'generated_documents' AND column_name = 'created_by'
   ) THEN
     ALTER TABLE public.generated_documents RENAME COLUMN owner_id TO created_by;
@@ -654,12 +654,12 @@ BEGIN
       ADD CONSTRAINT generated_documents_template_id_fkey
       FOREIGN KEY (template_id) REFERENCES public.document_templates(id) ON DELETE SET NULL;
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg constraint WHERE conname = 'generated_documents_client_id_fkey') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'generated_documents_client_id_fkey') THEN
     ALTER TABLE public.generated_documents
       ADD CONSTRAINT generated_documents_client_id_fkey
       FOREIGN KEY (client_id) REFERENCES public.clients(id) ON DELETE SET NULL;
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg constraint WHERE conname = 'generated_documents_user_id_fkey') THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'generated_documents_user_id_fkey') THEN
     ALTER TABLE public.generated_documents
       ADD CONSTRAINT generated_documents_user_id_fkey
       FOREIGN KEY (user_id) REFERENCES public.profiles(id) ON DELETE SET NULL;
@@ -707,7 +707,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'conversations' AND column_name = 'owner_id'
   ) AND NOT EXISTS (
-    SELECT 1 FROM information_schema columns
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'conversations' AND column_name = 'created_by'
   ) THEN
     ALTER TABLE public.conversations RENAME COLUMN owner_id TO created_by;
@@ -741,7 +741,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'messages' AND column_name = 'owner_id'
   ) AND NOT EXISTS (
-    SELECT 1 FROM information_schema columns
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'messages' AND column_name = 'created_by'
   ) THEN
     ALTER TABLE public.messages RENAME COLUMN owner_id TO created_by;
@@ -827,7 +827,7 @@ BEGIN
     SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'expenses' AND column_name = 'owner_id'
   ) AND NOT EXISTS (
-    SELECT 1 FROM information_schema columns
+    SELECT 1 FROM information_schema.columns
     WHERE table_schema = 'public' AND table_name = 'expenses' AND column_name = 'created_by'
   ) THEN
     ALTER TABLE public.expenses RENAME COLUMN owner_id TO created_by;

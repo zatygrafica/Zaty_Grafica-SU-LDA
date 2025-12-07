@@ -27,8 +27,33 @@ interface SelectOptions {
   select?: string;
 }
 
+export interface ListOptions extends SelectOptions {
+  // Filtros
+  filter?: Record<string, unknown>;
+  // Paginação
+  limit?: number;
+  offset?: number;
+  // Ordenação
+  orderBy?: {
+    column: string;
+    ascending?: boolean;
+  };
+  // Range personalizado
+  range?: {
+    from: number;
+    to: number;
+  };
+}
+
+export interface ListResponse<T> {
+  data: T[];
+  count?: number;
+  hasMore?: boolean;
+}
+
 export interface DataProvider {
-  list<T>(resource: ResourceName, options?: SelectOptions): Promise<T[]>;
+  list<T>(resource: ResourceName, options?: ListOptions): Promise<T[]>;
+  listWithCount<T>(resource: ResourceName, options?: ListOptions): Promise<ListResponse<T>>;
   getById<T>(resource: ResourceName, id: string, options?: SelectOptions): Promise<T | undefined>;
   create<T>(resource: ResourceName, payload: T): Promise<T>;
   update<T>(resource: ResourceName, id: string, payload: Partial<T>): Promise<T | undefined>;
@@ -48,9 +73,94 @@ const table = (resource: ResourceName) => supabase.from(tableName(resource));
 
 export const supabaseDataProvider: DataProvider = {
   async list<T>(resource, options) {
-    const { data, error } = await table(resource).select(options?.select ?? '*');
+    let query = table(resource).select(options?.select ?? '*');
+
+    // Aplicar filtros
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([key, value]) => {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        if (value === null) {
+          query = query.is(snakeKey, null);
+        } else if (Array.isArray(value)) {
+          query = query.in(snakeKey, value);
+        } else {
+          query = query.eq(snakeKey, value);
+        }
+      });
+    }
+
+    // Aplicar ordenação
+    if (options?.orderBy) {
+      const snakeColumn = options.orderBy.column.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      query = query.order(snakeColumn, { ascending: options.orderBy.ascending ?? true });
+    } else {
+      // Ordenação padrão por created_at descendente
+      query = query.order('created_at', { ascending: false });
+    }
+
+    // Aplicar paginação
+    if (options?.range) {
+      query = query.range(options.range.from, options.range.to);
+    } else if (options?.limit !== undefined) {
+      const from = options.offset ?? 0;
+      const to = from + options.limit - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     return convertKeysToCamelCase((data as T[]) ?? []);
+  },
+
+  async listWithCount<T>(resource, options) {
+    let query = table(resource).select(options?.select ?? '*', { count: 'exact' });
+
+    // Aplicar filtros
+    if (options?.filter) {
+      Object.entries(options.filter).forEach(([key, value]) => {
+        const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+        if (value === null) {
+          query = query.is(snakeKey, null);
+        } else if (Array.isArray(value)) {
+          query = query.in(snakeKey, value);
+        } else {
+          query = query.eq(snakeKey, value);
+        }
+      });
+    }
+
+    // Aplicar ordenação
+    if (options?.orderBy) {
+      const snakeColumn = options.orderBy.column.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      query = query.order(snakeColumn, { ascending: options.orderBy.ascending ?? true });
+    } else {
+      query = query.order('created_at', { ascending: false });
+    }
+
+    // Aplicar paginação
+    let from = 0;
+    let to = 999999; // Default: sem limite
+
+    if (options?.range) {
+      from = options.range.from;
+      to = options.range.to;
+      query = query.range(from, to);
+    } else if (options?.limit !== undefined) {
+      from = options.offset ?? 0;
+      to = from + options.limit - 1;
+      query = query.range(from, to);
+    }
+
+    const { data, error, count } = await query;
+    if (error) throw error;
+
+    const hasMore = count ? (to + 1) < count : false;
+
+    return {
+      data: convertKeysToCamelCase((data as T[]) ?? []),
+      count: count ?? undefined,
+      hasMore,
+    };
   },
   async getById<T>(resource, id, options) {
     const { data, error } = await table(resource).select(options?.select ?? '*').eq('id', id).maybeSingle();

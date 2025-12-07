@@ -45,18 +45,16 @@ function App() {
     }
   }, []);
 
-  // --- Initial Login ---
-  useEffect(() => {
-    if (!currentUser && users.length > 0) {
-      const adminUser = users.find(u => u.role === 'admin');
-      if (adminUser) {
-        login(adminUser); // This action also sets appStatus to 'ready'
-      } else {
-        console.warn("No admin user found for auto-login. The app might not function correctly.");
-        setAppStatus('ready'); // Manually set to ready to avoid getting stuck
-      }
-    }
-  }, [currentUser, users, login, setAppStatus]);
+  // --- REMOVED: Auto-login removed for security (Issue P0-3) ---
+  // Authentication now requires valid Supabase session via LoginPage
+  // useEffect(() => {
+  //   if (!currentUser && users.length > 0) {
+  //     const adminUser = users.find(u => u.role === 'admin');
+  //     if (adminUser) {
+  //       login(adminUser);
+  //     }
+  //   }
+  // }, [currentUser, users, login, setAppStatus]);
 
   const handlePwaUpdate = async () => {
     await updateSW(true);

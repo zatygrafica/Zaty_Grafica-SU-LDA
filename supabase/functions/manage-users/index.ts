@@ -30,10 +30,17 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
   },
 });
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*', // Em produção, especificar domínio
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 const jsonResponse = (body: unknown, init: ResponseInit = {}) =>
   new Response(JSON.stringify(body), {
     ...init,
     headers: {
+      ...corsHeaders,
       'Content-Type': 'application/json',
       ...(init.headers || {}),
     },
@@ -233,9 +240,17 @@ const handleImpersonate = async (payload: Record<string, unknown>) => {
 };
 
 serve(async (req: Request) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     if (req.method !== 'POST') {
-      return jsonResponse({ error: 'Method not allowed' }, { status: 405 });
+      return new Response(
+        JSON.stringify({ error: 'Method not allowed' }),
+        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const authResult = await getSessionUser(req);

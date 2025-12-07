@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 import Modal from '../Common/Modal';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
@@ -36,7 +37,12 @@ const DocumentPrintPreview: React.FC<DocumentPrintPreviewProps> = ({ isOpen, onC
                 }
               `}
             </style>
-            <div dangerouslySetInnerHTML={{ __html: content }} />
+            <div dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(content, {
+                ALLOWED_TAGS: ['div', 'p', 'h1', 'h2', 'h3', 'h4', 'strong', 'em', 'u', 'ol', 'ul', 'li', 'br', 'span', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+                ALLOWED_ATTR: ['class', 'style'],
+              })
+            }} />
           </div>
         </div>
       </div>

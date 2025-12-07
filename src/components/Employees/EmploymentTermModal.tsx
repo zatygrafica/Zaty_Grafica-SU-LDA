@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import DOMPurify from 'dompurify';
 import { Employee } from '../../types';
 import Modal from '../Common/Modal';
 import Button from '../Common/Button';
@@ -119,7 +120,13 @@ const EmploymentTermModal: React.FC<EmploymentTermModalProps> = ({ isOpen, onClo
                 className="w-full h-[60vh] font-mono text-xs border border-gray-300 p-2 rounded"
               />
             ) : (
-              <div dangerouslySetInnerHTML={{ __html: editedContent }} />
+              <div dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(editedContent, {
+                  ALLOWED_TAGS: ['div', 'p', 'h1', 'h2', 'h3', 'strong', 'em', 'u', 'ol', 'ul', 'li', 'br', 'img', 'span'],
+                  ALLOWED_ATTR: ['class', 'style', 'src', 'alt', 'height', 'width'],
+                  ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+                })
+              }} />
             )}
           </div>
         </div>

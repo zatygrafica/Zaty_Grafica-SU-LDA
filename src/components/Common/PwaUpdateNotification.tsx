@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 import { useTranslation } from 'react-i18next';
 import { Gift } from 'lucide-react';
 import Button from './Button';
@@ -38,7 +39,15 @@ const PwaUpdateNotification: React.FC<PwaUpdateNotificationProps> = ({ onUpdate,
           <h4 className="font-semibold text-gray-900 dark:text-white mb-3">O que há de novo:</h4>
           <ul className="space-y-2 list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
             {notesList.map((note, index) => (
-              <li key={index} dangerouslySetInnerHTML={{ __html: note.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }} />
+              <li key={index} dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(
+                  note.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'),
+                  {
+                    ALLOWED_TAGS: ['strong', 'em'],
+                    ALLOWED_ATTR: [],
+                  }
+                )
+              }} />
             ))}
           </ul>
         </div>
