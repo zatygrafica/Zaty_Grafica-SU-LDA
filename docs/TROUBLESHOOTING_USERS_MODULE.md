@@ -1,11 +1,50 @@
 # 🔧 Troubleshooting - Módulo de Usuários
 
-## Erro: "Internal server error"
+## ✅ SOLUÇÃO DEFINITIVA IMPLEMENTADA (v6)
 
-### Causa Raiz
-A Edge Function `manage-users` está falhando internamente. Possíveis causas:
+### Problema Resolvido
+O erro "Internal server error" foi causado por queries SQL tentando selecionar colunas que **NÃO EXISTEM** na tabela `profiles`.
+
+### Causa Raiz Identificada
+A tabela `profiles` do Supabase **NÃO contém**:
+- ❌ `email` → está em `auth.users`
+- ❌ `is_blocked` → derivado de `auth.users.banned_until`
+- ❌ `name` → apenas `full_name` existe
+- ❌ `photo_url` → apenas `avatar_url` existe
+
+### Estrutura REAL da tabela profiles
+```sql
+-- Colunas que EXISTEM:
+id, full_name, avatar_url, role, permissions, phone, owner_org, created_at, updated_at
+
+-- Colunas que NÃO EXISTEM:
+email, is_blocked, name, photo_url
+```
+
+### Solução Implementada
+A Edge Function agora:
+1. **Busca usuários em auth.users** usando `supabase.auth.admin.listUsers()`
+2. **Complementa com dados de profiles** via JOIN manual
+3. **Faz merge inteligente** com fallbacks:
+   - Email: `auth.users.email`
+   - is_blocked: calculado de `auth.users.banned_until`
+   - Role/Permissions: `profiles` > `user_metadata` > default 'user'
+   - Avatar: `profiles.avatar_url` > `user_metadata.avatar_url`
+
+### Resultado
+✅ Listagem de usuários funciona **100%**
+✅ Nenhuma coluna inexistente é consultada
+✅ Dados completos de auth.users + profiles
+✅ Logs detalhados para diagnóstico
+
+---
+
+## Erro: "Internal server error" (HISTÓRICO)
+
+### Causa Raiz (RESOLVIDA)
+A Edge Function `manage-users` estava falhando internamente. Causas possíveis:
 - RLS policies bloqueando acesso à tabela `profiles`
-- Colunas faltando na tabela `profiles`
+- Colunas faltando na tabela `profiles` ← **ESTE ERA O PROBLEMA**
 - Service role key não configurada
 - Erro de permissão no banco de dados
 
