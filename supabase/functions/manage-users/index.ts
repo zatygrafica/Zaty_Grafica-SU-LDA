@@ -107,7 +107,7 @@ const handleList = async () => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, email, role, permissions, avatar_url, photo_url, is_blocked, created_at, updated_at')
+      .select('id, full_name, email, role, permissions, avatar_url, is_blocked, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -246,7 +246,7 @@ const handleImpersonate = async (payload: Record<string, unknown>) => {
   if (!id) return { error: 'id is required', status: 400 };
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, full_name, name, email, role, permissions, avatar_url, photo_url, is_blocked, created_at, updated_at')
+    .select('id, full_name, email, role, permissions, avatar_url, is_blocked, created_at, updated_at')
     .eq('id', id)
     .maybeSingle();
   if (error) return { error: error.message, status: 500 };
