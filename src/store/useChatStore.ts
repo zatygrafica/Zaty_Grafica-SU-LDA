@@ -33,6 +33,32 @@ const normalizeMessage = (message: ChatMessage): ChatMessage => ({
   timestamp: message.timestamp ? new Date(message.timestamp) : new Date(),
 });
 
+// Helper function to deduplicate conversations by participants
+const deduplicateConversations = (conversations: Conversation[]): Conversation[] => {
+  const seen = new Map<string, Conversation>();
+
+  conversations.forEach((convo) => {
+    // Ensure participantIds exists and is valid
+    if (!convo.participantIds || convo.participantIds.length === 0) {
+      // Try to derive from conversation ID
+      convo.participantIds = convo.id.split('-').filter(Boolean);
+    }
+
+    // Create a unique key based on sorted participant IDs
+    const key = [...convo.participantIds].sort().join('-');
+
+    // Keep the conversation with the most recent timestamp
+    const existing = seen.get(key);
+    if (!existing || new Date(convo.lastMessageTimestamp) > new Date(existing.lastMessageTimestamp)) {
+      seen.set(key, convo);
+    }
+  });
+
+  return Array.from(seen.values()).sort(
+    (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
+  );
+};
+
 export const useChatStore = create<ChatState>((set, get) => ({
   conversations: [],
   messages: {},
@@ -45,11 +71,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const conversations = await dataProvider.list<Conversation>('conversations');
-      const normalized = conversations.map(normalizeConversation).sort(
-        (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
-      );
-      set({ conversations: normalized, loading: false });
-      return normalized;
+      const normalized = conversations.map(normalizeConversation);
+      const deduplicated = deduplicateConversations(normalized);
+      set({ conversations: deduplicated, loading: false });
+      return deduplicated;
     } catch (error) {
       set({ loading: false, error: (error as Error).message });
       throw error;
@@ -85,10 +110,16 @@ export const useChatStore = create<ChatState>((set, get) => ({
     if (!currentUser) throw new Error('No current user');
 
     const participantIds = [currentUser.id, participantId].sort();
+    const participantKey = participantIds.join('-');
     const conversations = get().conversations;
-    const existingConversation = conversations.find(
-      (c) => c.participantIds?.length === 2 && [...c.participantIds].sort().every((id, idx) => id === participantIds[idx])
-    );
+
+    // Enhanced search: check by participantIds AND by participant key
+    const existingConversation = conversations.find((c) => {
+      if (!c.participantIds || c.participantIds.length !== 2) return false;
+      const cKey = [...c.participantIds].sort().join('-');
+      return cKey === participantKey;
+    });
+
     if (existingConversation) {
       return existingConversation;
     }
@@ -102,23 +133,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
 
     try {
-      // Optimistic add so header/input can render immediately
+      // Optimistic add with deduplication
       set((state) => {
-        const others = state.conversations.filter((c) => c.id !== newConversation.id);
+        const allConversations = [newConversation, ...state.conversations];
         return {
-          conversations: [newConversation, ...others].sort(
-            (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
-          ),
+          conversations: deduplicateConversations(allConversations),
         };
       });
 
       const created = await dataProvider.create<Conversation>('conversations', newConversation);
       const normalized = normalizeConversation(created);
-      set((state) => ({
-        conversations: [normalized, ...state.conversations.filter((c) => c.id !== normalized.id)].sort(
-          (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
-        ),
-      }));
+      set((state) => {
+        const allConversations = [normalized, ...state.conversations];
+        return {
+          conversations: deduplicateConversations(allConversations),
+        };
+      });
       return normalized;
     } catch (error) {
       const code = (error as { code?: string }).code;
@@ -128,11 +158,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
           const existing = await dataProvider.getById<Conversation>('conversations', conversationId);
           if (existing) {
             const normalized = normalizeConversation(existing);
-            set((state) => ({
-              conversations: [normalized, ...state.conversations.filter((c) => c.id !== normalized.id)].sort(
-                (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
-              ),
-            }));
+            set((state) => {
+              const allConversations = [normalized, ...state.conversations];
+              return {
+                conversations: deduplicateConversations(allConversations),
+              };
+            });
             return normalized;
           }
         } catch (fetchErr) {
@@ -142,8 +173,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
       }
       set((state) => ({
         error: (error as Error).message,
-        // rollback optimistic insert on failure
-        conversations: state.conversations.filter((c) => c.id !== newConversation.id),
+        // rollback optimistic insert with deduplication
+        conversations: deduplicateConversations(state.conversations.filter((c) => c.id !== newConversation.id)),
       }));
       throw error;
     }
@@ -177,14 +208,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     try {
       const created = await dataProvider.create<ChatMessage>('messages', newMessage);
       const normalized = normalizeMessage(created);
-      set((state) => ({
-        messages: { ...state.messages, [normalized.id]: normalized },
-        conversations: state.conversations
-          .map((c) =>
-            c.id === conversationId ? { ...c, lastMessageTimestamp: normalized.timestamp } : c
-          )
-          .sort((a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()),
-      }));
+      set((state) => {
+        const updatedConversations = state.conversations.map((c) =>
+          c.id === conversationId ? { ...c, lastMessageTimestamp: normalized.timestamp } : c
+        );
+        return {
+          messages: { ...state.messages, [normalized.id]: normalized },
+          conversations: deduplicateConversations(updatedConversations),
+        };
+      });
       await dataProvider.update('conversations', conversationId, { lastMessageTimestamp: normalized.timestamp });
       addAuditLog({ action: 'create', resourceType: 'ChatMessage', resourceId: normalized.id });
       return normalized;
@@ -255,11 +287,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
           : new Date(),
       };
       set((state) => {
-        const others = state.conversations.filter((c) => c.id !== normalized.id);
+        // Remove by ID AND by participants to prevent duplicates
+        const participantKey = [...normalized.participantIds].sort().join('-');
+        const others = state.conversations.filter((c) => {
+          const cKey = [...(c.participantIds || [])].sort().join('-');
+          return c.id !== normalized.id && cKey !== participantKey;
+        });
+        const allConversations = [normalized, ...others];
         return {
-          conversations: [normalized, ...others].sort(
-            (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
-          ),
+          conversations: deduplicateConversations(allConversations),
         };
       });
     };
@@ -269,7 +305,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       { event: '*', schema: 'public', table: 'conversations' },
       (payload) => {
         const raw = (payload.new ?? payload.old) as Record<string, unknown>;
-        const parsed = convertKeysToCamelCase(raw) as Conversation;
+        const parsed = convertKeysToCamelCase(raw) as unknown as Conversation;
         if (!parsed?.id) return;
         const normalized = normalizeConversation(parsed);
 
@@ -288,7 +324,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       { event: '*', schema: 'public', table: 'messages' },
       (payload) => {
         const raw = (payload.new ?? payload.old) as Record<string, unknown>;
-        const parsed = convertKeysToCamelCase(raw) as ChatMessage;
+        const parsed = convertKeysToCamelCase(raw) as unknown as ChatMessage;
         if (!parsed?.id) return;
         const normalized = normalizeMessage(parsed);
         const currentUserId = useStore.getState().currentUser?.id;
@@ -313,22 +349,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
               unreadCount: 0,
             };
 
-          const updatedConversations = [
-            ...baseConversations.filter((c) => c.id !== conversation.id),
-            {
-              ...conversation,
-              participantIds: conversation.participantIds.length > 0 ? conversation.participantIds : participantIds,
-              lastMessageTimestamp: normalized.timestamp,
-              unreadCount:
-                normalized.senderId !== currentUserId && payload.eventType === 'INSERT'
-                  ? (conversation.unreadCount ?? 0) + 1
-                  : conversation.unreadCount ?? 0,
-            },
-          ].sort(
-            (a, b) => new Date(b.lastMessageTimestamp).getTime() - new Date(a.lastMessageTimestamp).getTime()
-          );
+          const updatedConversation = {
+            ...conversation,
+            participantIds: conversation.participantIds && conversation.participantIds.length > 0 ? conversation.participantIds : participantIds,
+            lastMessageTimestamp: normalized.timestamp,
+            unreadCount:
+              normalized.senderId !== currentUserId && payload.eventType === 'INSERT'
+                ? (conversation.unreadCount ?? 0) + 1
+                : conversation.unreadCount ?? 0,
+          };
 
-          return { messages, conversations: updatedConversations };
+          // Use deduplication to prevent duplicate conversations
+          const allConversations = [
+            updatedConversation,
+            ...baseConversations.filter((c) => c.id !== conversation.id),
+          ];
+
+          return {
+            messages,
+            conversations: deduplicateConversations(allConversations),
+          };
         });
       }
     );
