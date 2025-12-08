@@ -729,5 +729,58 @@
   "pwa_update": {
     "whats_new": "O que há de novo:",
     "update_later": "Mais tarde"
+  },
+  "passport_photos": {
+    "title": "ZatyPasse",
+    "subtitle": "Editor profissional de fotos 3x4",
+    "upload": {
+      "button": "Carregar Fotos",
+      "add_more": "Adicionar Mais",
+      "accepted_formats": "Formatos aceitos:",
+      "formats_list": "PNG, JPG, JPEG, WEBP",
+      "loading": "Carregando fotos...",
+      "progress_percent": "{{percent}}%"
+    },
+    "photos": {
+      "title": "Suas Fotos",
+      "selected_singular": "{{count}} selecionada para impressao",
+      "selected_plural": "{{count}} selecionadas para impressao",
+      "edit": "Editar",
+      "delete": "Excluir foto",
+      "copies": "Copias",
+      "copies_count": "{{count}}x"
+    },
+    "preview": {
+      "title": "Pre-visualizacao A4 (clones inclusos)",
+      "description": "Primeiras 5 fotos ficam no topo; copias extras seguem logo abaixo.",
+      "no_selection": "Selecione fotos para ver a distribuicao na folha A4."
+    },
+    "actions": {
+      "print": "Imprimir",
+      "download_pdf": "Baixar PDF"
+    },
+    "editor": {
+      "title": "Editor de Foto",
+      "subtitle": "Ajuste livre com corte 3x4",
+      "zoom_label": "Zoom: {{value}}x",
+      "drag_instruction": "Arraste para reposicionar",
+      "recenter": "Recentralizar",
+      "reset": "Resetar",
+      "save": "Salvar Edicao"
+    },
+    "errors": {
+      "limit_reached": "Limite de 6 fotos atingido.",
+      "file_read_error": "Falha ao ler arquivo",
+      "image_load_error": "Falha ao carregar imagem",
+      "photo_load_failed": "Nao foi possivel carregar a foto. Tente novamente.",
+      "canvas_unavailable": "Canvas indisponivel",
+      "generate_file_error": "Erro ao gerar arquivo. Tente novamente.",
+      "no_photos_selected_print": "Selecione pelo menos 1 foto para imprimir.",
+      "no_photos_selected_download": "Selecione pelo menos 1 foto para baixar."
+    },
+    "print": {
+      "alt_text": "foto para impressao",
+      "photo_alt": "foto-{{index}}"
+    }
   }
 }

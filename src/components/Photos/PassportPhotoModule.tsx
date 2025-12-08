@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Upload, ZoomIn, ZoomOut, Move, Printer, X, Check, Edit, Trash2, Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Photo {
   id: string;
@@ -106,6 +107,7 @@ const renderPhotoDataUrl = (
   });
 
 const ZatyPasse: React.FC = () => {
+  const { t } = useTranslation();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -134,7 +136,7 @@ const ZatyPasse: React.FC = () => {
     const remaining = maxPhotos - photos.length;
     const limitedFiles = files.slice(0, Math.max(0, remaining));
     if (!limitedFiles.length) {
-      setError('Limite de 6 fotos atingido.');
+      setError(t('passport_photos.errors.limit_reached'));
       return;
     }
 
@@ -152,14 +154,14 @@ const ZatyPasse: React.FC = () => {
         const preview = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = (ev) => resolve(ev.target?.result as string);
-          reader.onerror = () => reject(new Error('Falha ao ler arquivo'));
+          reader.onerror = () => reject(new Error(t('passport_photos.errors.file_read_error')));
           reader.readAsDataURL(file);
         });
 
         await new Promise<void>((resolve, reject) => {
           const image = new Image();
           image.onload = () => resolve();
-          image.onerror = () => reject(new Error('Falha ao carregar imagem'));
+          image.onerror = () => reject(new Error(t('passport_photos.errors.image_load_error')));
           image.src = preview;
         });
 
@@ -172,7 +174,7 @@ const ZatyPasse: React.FC = () => {
         });
       } catch (err) {
         console.error(err);
-        setError('Nao foi possivel carregar a foto. Tente novamente.');
+        setError(t('passport_photos.errors.photo_load_failed'));
       } finally {
         setUploadProgress(((i + 1) / limitedFiles.length) * 100);
       }
@@ -236,7 +238,7 @@ const ZatyPasse: React.FC = () => {
   const handlePrint = () => {
     const selected = photos.filter((p) => selectedForPrint.has(p.id));
     if (selected.length === 0) {
-      setError('Selecione pelo menos 1 foto para imprimir.');
+      setError(t('passport_photos.errors.no_photos_selected_print'));
       return;
     }
 
@@ -351,7 +353,7 @@ const ZatyPasse: React.FC = () => {
   const handleDownloadPdf = async () => {
     const selected = photos.filter((p) => selectedForPrint.has(p.id));
     if (selected.length === 0) {
-      setError('Selecione pelo menos 1 foto para baixar.');
+      setError(t('passport_photos.errors.no_photos_selected_download'));
       return;
     }
 
@@ -430,7 +432,7 @@ const ZatyPasse: React.FC = () => {
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('Canvas indisponivel');
+      if (!ctx) throw new Error(t('passport_photos.errors.canvas_unavailable'));
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, width, height);
 
@@ -459,7 +461,7 @@ const ZatyPasse: React.FC = () => {
       link.click();
     } catch (err) {
       console.error('Erro ao gerar arquivo:', err);
-      setError('Erro ao gerar arquivo. Tente novamente.');
+      setError(t('passport_photos.errors.generate_file_error'));
     }
   };
 
@@ -505,8 +507,8 @@ const ZatyPasse: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50 to-indigo-100 dark:from-neutral-900 dark:via-neutral-900/90 dark:to-neutral-950 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-indigo-900 dark:text-white mb-2">ZatyPasse</h1>
-          <p className="text-gray-600 dark:text-gray-300 text-sm">Editor profissional de fotos 3x4</p>
+          <h1 className="text-4xl font-bold text-indigo-900 dark:text-white mb-2">{t('passport_photos.title')}</h1>
+          <p className="text-gray-600 dark:text-gray-300 text-sm">{t('passport_photos.subtitle')}</p>
         </div>
 
         <style>
@@ -542,10 +544,10 @@ const ZatyPasse: React.FC = () => {
                 className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transition-all transform hover:scale-105 flex items-center gap-3 mx-auto"
               >
                 <Upload className="w-6 h-6" />
-                Carregar Fotos
+                {t('passport_photos.upload.button')}
               </button>
               <p className="text-gray-600 dark:text-gray-300">
-                Formatos aceitos: <span className="font-semibold">PNG, JPG, JPEG, WEBP</span>
+                {t('passport_photos.upload.accepted_formats')} <span className="font-semibold">{t('passport_photos.upload.formats_list')}</span>
               </p>
             </div>
           </div>
@@ -556,12 +558,12 @@ const ZatyPasse: React.FC = () => {
             <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-lg p-6">
               <div className="flex items-center gap-3 mb-4">
                 <Upload className="w-6 h-6 text-indigo-600 animate-pulse" />
-                <span className="text-lg font-semibold text-gray-800 dark:text-white">Carregando fotos...</span>
+                <span className="text-lg font-semibold text-gray-800 dark:text-white">{t('passport_photos.upload.loading')}</span>
               </div>
               <div className="w-full bg-gray-200 dark:bg-neutral-800 rounded-full h-4 overflow-hidden">
                 <div className="bg-indigo-600 h-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }} />
               </div>
-              <p className="text-center mt-2 text-sm text-gray-600 dark:text-gray-300">{Math.round(uploadProgress)}%</p>
+              <p className="text-center mt-2 text-sm text-gray-600 dark:text-gray-300">{t('passport_photos.upload.progress_percent', { percent: Math.round(uploadProgress) })}</p>
             </div>
           </div>
         )}
@@ -570,9 +572,9 @@ const ZatyPasse: React.FC = () => {
           <div className="space-y-8 no-print">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Suas Fotos</h2>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{t('passport_photos.photos.title')}</h2>
                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                  {selectedForPrint.size > 0 && `${selectedForPrint.size} selecionada${selectedForPrint.size > 1 ? 's' : ''} para impressao`}
+                  {selectedForPrint.size > 0 && t(selectedForPrint.size > 1 ? 'passport_photos.photos.selected_plural' : 'passport_photos.photos.selected_singular', { count: selectedForPrint.size })}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -582,7 +584,7 @@ const ZatyPasse: React.FC = () => {
                   className="bg-white dark:bg-neutral-800 text-indigo-600 px-4 py-2 rounded-lg font-semibold shadow hover:shadow-md transition-all flex items-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  Adicionar Mais
+                  {t('passport_photos.upload.add_more')}
                 </button>
                 {selectedForPrint.size > 0 && (
                   <>
@@ -591,14 +593,14 @@ const ZatyPasse: React.FC = () => {
                       className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all flex items-center gap-2"
                     >
                       <Printer className="w-4 h-4" />
-                      Imprimir
+                      {t('passport_photos.actions.print')}
                     </button>
                     <button
                       onClick={handleDownloadPdf}
                       className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all flex items-center gap-2"
                     >
                       <Download className="w-4 h-4" />
-                      Baixar PDF
+                      {t('passport_photos.actions.download_pdf')}
                     </button>
                   </>
                 )}
@@ -621,7 +623,7 @@ const ZatyPasse: React.FC = () => {
                   <div className="p-3 flex justify-between items-center">
                     <button onClick={() => openEditor(photo)} className="text-indigo-600 hover:text-indigo-800 font-semibold text-sm flex items-center gap-1">
                       <Edit className="w-4 h-4" />
-                      Editar
+                      {t('passport_photos.photos.edit')}
                     </button>
 
                     <button
@@ -635,7 +637,7 @@ const ZatyPasse: React.FC = () => {
                   </div>
                   <div className="px-3 pb-3 space-y-2 text-sm">
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-gray-600 dark:text-gray-400">Copias</span>
+                      <span className="text-gray-600 dark:text-gray-400">{t('passport_photos.photos.copies')}</span>
                       <select
                         value={photo.copyCount ?? 1}
                         onChange={(e) =>
@@ -647,7 +649,7 @@ const ZatyPasse: React.FC = () => {
                       >
                         {[1, 2, 3, 4, 5].map((n) => (
                           <option key={n} value={n}>
-                            {n}x
+                            {t('passport_photos.photos.copies_count', { count: n })}
                           </option>
                         ))}
                       </select>
@@ -665,7 +667,7 @@ const ZatyPasse: React.FC = () => {
                         className="flex items-center gap-1 text-xs text-red-500 hover:text-red-600"
                       >
                         <Trash2 className="w-4 h-4" />
-                        Excluir foto
+                        {t('passport_photos.photos.delete')}
                       </button>
                     </div>
                   </div>
@@ -676,14 +678,14 @@ const ZatyPasse: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Pre-visualizacao A4 (clones inclusos)</h3>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Primeiras 5 fotos ficam no topo; copias extras seguem logo abaixo.</p>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{t('passport_photos.preview.title')}</h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">{t('passport_photos.preview.description')}</p>
                 </div>
               </div>
 
               <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-inner p-4">
                 {previewSelection.length === 0 ? (
-                  <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-10">Selecione fotos para ver a distribuicao na folha A4.</div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-10">{t('passport_photos.preview.no_selection')}</div>
                 ) : (
                   <div className="aspect-[210/297] bg-white rounded-lg p-4 overflow-auto border border-gray-200 mx-auto" style={{ maxWidth: '820px' }}>
                     <div
@@ -727,8 +729,8 @@ const ZatyPasse: React.FC = () => {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Editor de Foto</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Ajuste livre com corte 3x4</p>
+                    <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{t('passport_photos.editor.title')}</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{t('passport_photos.editor.subtitle')}</p>
                   </div>
                   <button onClick={() => setEditingPhoto(null)} className="text-gray-500 hover:text-gray-700">
                     <X className="w-6 h-6" />
@@ -754,7 +756,7 @@ const ZatyPasse: React.FC = () => {
 
                     <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                       <Move className="w-4 h-4" />
-                      <span>Arraste para reposicionar</span>
+                      <span>{t('passport_photos.editor.drag_instruction')}</span>
                     </div>
                   </div>
 
@@ -762,7 +764,7 @@ const ZatyPasse: React.FC = () => {
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 dark:text-white mb-2 flex items-center gap-2">
                         <ZoomIn className="w-4 h-4" />
-                        Zoom: {editZoom.toFixed(2)}x
+                        {t('passport_photos.editor.zoom_label', { value: editZoom.toFixed(2) })}
                       </label>
                       <input type="range" min="0.5" max="3" step="0.01" value={editZoom} onChange={(e) => setEditZoom(parseFloat(e.target.value))} className="w-full" />
                       <div className="flex gap-2 mt-2">
@@ -777,7 +779,7 @@ const ZatyPasse: React.FC = () => {
 
                     <div className="space-y-2">
                       <button onClick={() => setEditOffset({ x: 0, y: 0 })} className="w-full bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 px-4 py-2 rounded font-semibold text-sm">
-                        Recentralizar
+                        {t('passport_photos.editor.recenter')}
                       </button>
                       <button
                         onClick={() => {
@@ -786,7 +788,7 @@ const ZatyPasse: React.FC = () => {
                         }}
                         className="w-full bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700 px-4 py-2 rounded font-semibold text-sm"
                       >
-                        Resetar
+                        {t('passport_photos.editor.reset')}
                       </button>
                     </div>
 
@@ -796,7 +798,7 @@ const ZatyPasse: React.FC = () => {
                         className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-semibold shadow-lg transition-all flex items-center justify-center gap-2"
                       >
                         <Check className="w-5 h-5" />
-                        Salvar Edicao
+                        {t('passport_photos.editor.save')}
                       </button>
                     </div>
                   </div>
@@ -850,7 +852,7 @@ const ZatyPasse: React.FC = () => {
               >
                 <img
                   src={src}
-                  alt="foto para impressao"
+                  alt={t('passport_photos.print.alt_text')}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   onLoad={() => setPrintLoaded((c) => c + 1)}
                   onError={() => setPrintLoaded((c) => c + 1)}

@@ -729,5 +729,58 @@
     "pwa_update": {
         "whats_new": "What's new:",
         "update_later": "Later"
+    },
+    "passport_photos": {
+        "title": "ZatyPasse",
+        "subtitle": "Professional 3x4 photo editor",
+        "upload": {
+            "button": "Upload Photos",
+            "add_more": "Add More",
+            "accepted_formats": "Accepted formats:",
+            "formats_list": "PNG, JPG, JPEG, WEBP",
+            "loading": "Loading photos...",
+            "progress_percent": "{{percent}}%"
+        },
+        "photos": {
+            "title": "Your Photos",
+            "selected_singular": "{{count}} selected for printing",
+            "selected_plural": "{{count}} selected for printing",
+            "edit": "Edit",
+            "delete": "Delete photo",
+            "copies": "Copies",
+            "copies_count": "{{count}}x"
+        },
+        "preview": {
+            "title": "A4 Preview (clones included)",
+            "description": "First 5 photos are at the top; extra copies follow below.",
+            "no_selection": "Select photos to see the distribution on the A4 sheet."
+        },
+        "actions": {
+            "print": "Print",
+            "download_pdf": "Download PDF"
+        },
+        "editor": {
+            "title": "Photo Editor",
+            "subtitle": "Free adjustment with 3x4 crop",
+            "zoom_label": "Zoom: {{value}}x",
+            "drag_instruction": "Drag to reposition",
+            "recenter": "Recenter",
+            "reset": "Reset",
+            "save": "Save Edit"
+        },
+        "errors": {
+            "limit_reached": "Limit of 6 photos reached.",
+            "file_read_error": "Failed to read file",
+            "image_load_error": "Failed to load image",
+            "photo_load_failed": "Could not load photo. Please try again.",
+            "canvas_unavailable": "Canvas unavailable",
+            "generate_file_error": "Error generating file. Please try again.",
+            "no_photos_selected_print": "Select at least 1 photo to print.",
+            "no_photos_selected_download": "Select at least 1 photo to download."
+        },
+        "print": {
+            "alt_text": "photo for printing",
+            "photo_alt": "photo-{{index}}"
+        }
     }
 }
