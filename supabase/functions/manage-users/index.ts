@@ -105,24 +105,50 @@ const ensureAdmin = async (userId: string) => {
 
 const handleList = async () => {
   try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, role, permissions, avatar_url, is_blocked, created_at, updated_at')
-      .order('created_at', { ascending: false });
+    // First, get all users from auth.users (service_role has access)
+    const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
 
-    if (error) {
-      console.error('[manage-users] List error:', error);
-      throw new Error(`Failed to fetch profiles: ${error.message}`);
+    if (authError) {
+      console.error('[manage-users] Auth list error:', authError);
+      throw new Error(`Failed to fetch auth users: ${authError.message}`);
     }
 
-    if (!data) {
-      console.warn('[manage-users] No data returned from profiles table');
+    if (!authData?.users || authData.users.length === 0) {
+      console.warn('[manage-users] No auth users found');
       return [];
     }
 
-    console.log(`[manage-users] Successfully fetched ${data.length} profiles`);
-    const users = data.map((row) => mapProfileToUser(row as Record<string, unknown>));
-    return users;
+    // Then get profile data for all users
+    const userIds = authData.users.map((u: { id: string }) => u.id);
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, full_name, role, permissions, avatar_url, phone, created_at, updated_at')
+      .in('id', userIds);
+
+    if (profilesError) {
+      console.error('[manage-users] Profiles fetch error:', profilesError);
+      // Don't throw - we can still return users with default profile data
+    }
+
+    // Merge auth data with profile data
+    const mergedUsers = authData.users.map((authUser: Record<string, unknown>) => {
+      const profile = profilesData?.find((p: { id: string }) => p.id === authUser.id);
+      return {
+        id: authUser.id,
+        email: authUser.email || '',
+        full_name: profile?.full_name || (authUser.user_metadata as Record<string, unknown>)?.full_name || authUser.email || 'User',
+        role: profile?.role || (authUser.user_metadata as Record<string, unknown>)?.role || 'user',
+        permissions: profile?.permissions || (authUser.user_metadata as Record<string, unknown>)?.permissions || [],
+        avatar_url: profile?.avatar_url || (authUser.user_metadata as Record<string, unknown>)?.avatar_url,
+        is_blocked: authUser.banned_until ? new Date(authUser.banned_until as string) > new Date() : false,
+        created_at: authUser.created_at,
+        updated_at: authUser.updated_at || profile?.updated_at,
+      };
+    });
+
+    console.log(`[manage-users] Successfully fetched ${mergedUsers.length} users`);
+    const mappedUsers = mergedUsers.map((row: Record<string, unknown>) => mapProfileToUser(row));
+    return mappedUsers;
   } catch (err) {
     console.error('[manage-users] handleList exception:', err);
     throw err;
@@ -244,14 +270,37 @@ const handleDelete = async (payload: Record<string, unknown>) => {
 const handleImpersonate = async (payload: Record<string, unknown>) => {
   const id = payload.id as string | undefined;
   if (!id) return { error: 'id is required', status: 400 };
-  const { data, error } = await supabase
+
+  // Get user from auth.users
+  const { data: authUser, error: authError } = await supabase.auth.admin.getUserById(id);
+  if (authError) return { error: authError.message, status: 500 };
+  if (!authUser?.user) return { error: 'User not found', status: 404 };
+
+  // Get profile data
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, permissions, avatar_url, is_blocked, created_at, updated_at')
+    .select('id, full_name, role, permissions, avatar_url, phone, created_at, updated_at')
     .eq('id', id)
     .maybeSingle();
-  if (error) return { error: error.message, status: 500 };
-  if (!data) return { error: 'User not found', status: 404 };
-  return mapProfileToUser(data as Record<string, unknown>);
+
+  if (profileError) {
+    console.error('[manage-users] Profile fetch error for impersonate:', profileError);
+  }
+
+  // Merge data
+  const mergedData = {
+    id: authUser.user.id,
+    email: authUser.user.email || '',
+    full_name: profile?.full_name || authUser.user.user_metadata?.full_name || authUser.user.email || 'User',
+    role: profile?.role || authUser.user.user_metadata?.role || 'user',
+    permissions: profile?.permissions || authUser.user.user_metadata?.permissions || [],
+    avatar_url: profile?.avatar_url || authUser.user.user_metadata?.avatar_url,
+    is_blocked: authUser.user.banned_until ? new Date(authUser.user.banned_until) > new Date() : false,
+    created_at: authUser.user.created_at,
+    updated_at: authUser.user.updated_at || profile?.updated_at,
+  };
+
+  return mapProfileToUser(mergedData as Record<string, unknown>);
 };
 
 serve(async (req: Request) => {
