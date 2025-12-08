@@ -104,14 +104,29 @@ const ensureAdmin = async (userId: string) => {
 };
 
 const handleList = async () => {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, full_name, name, email, role, permissions, avatar_url, photo_url, is_blocked, created_at, updated_at')
-    .order('created_at', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, name, email, role, permissions, avatar_url, photo_url, is_blocked, created_at, updated_at')
+      .order('created_at', { ascending: false });
 
-  if (error) throw new Error(error.message);
-  const users = (data ?? []).map((row) => mapProfileToUser(row as Record<string, unknown>));
-  return users;
+    if (error) {
+      console.error('[manage-users] List error:', error);
+      throw new Error(`Failed to fetch profiles: ${error.message}`);
+    }
+
+    if (!data) {
+      console.warn('[manage-users] No data returned from profiles table');
+      return [];
+    }
+
+    console.log(`[manage-users] Successfully fetched ${data.length} profiles`);
+    const users = data.map((row) => mapProfileToUser(row as Record<string, unknown>));
+    return users;
+  } catch (err) {
+    console.error('[manage-users] handleList exception:', err);
+    throw err;
+  }
 };
 
 const handleCreate = async (payload: Record<string, unknown>) => {
