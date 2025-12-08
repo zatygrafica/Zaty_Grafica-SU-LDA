@@ -1,5 +1,73 @@
 # 🔧 Troubleshooting - Módulo de Usuários
 
+## Erro: "Internal server error"
+
+### Causa Raiz
+A Edge Function `manage-users` está falhando internamente. Possíveis causas:
+- RLS policies bloqueando acesso à tabela `profiles`
+- Colunas faltando na tabela `profiles`
+- Service role key não configurada
+- Erro de permissão no banco de dados
+
+### Como Diagnosticar
+
+**1. Verificar Logs no Dashboard do Supabase:**
+
+```
+1. Acesse https://supabase.com/dashboard
+2. Selecione seu projeto
+3. Vá em Edge Functions → manage-users
+4. Clique na aba "Logs"
+5. Procure por mensagens com prefixo [manage-users]
+```
+
+**Mensagens de log possíveis:**
+- `[manage-users] List error:` → Erro ao buscar profiles (veja detalhes)
+- `[manage-users] No data returned` → Tabela vazia ou RLS bloqueando
+- `[manage-users] Successfully fetched X profiles` → Funcionando!
+
+**2. Verificar RLS Policies:**
+
+Se os logs mostrarem erro de permissão, verifique as policies:
+
+```sql
+-- Verificar se RLS está habilitado
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE tablename = 'profiles';
+
+-- Listar policies existentes
+SELECT * FROM pg_policies WHERE tablename = 'profiles';
+```
+
+**3. Verificar Service Role Key:**
+
+No Dashboard do Supabase:
+```
+Settings → API → Service Role Key (secret)
+```
+
+Esta chave deve estar configurada no ambiente da Edge Function.
+
+### Soluções
+
+**Se o problema for RLS:**
+A Edge Function usa `service_role_key` que bypassa RLS, mas verifique se está configurado corretamente.
+
+**Se o problema for colunas faltando:**
+Execute a migração mais recente:
+```bash
+supabase db push
+```
+
+**Se persistir:**
+Reimplante a função:
+```bash
+supabase functions deploy manage-users --no-verify-jwt
+```
+
+---
+
 ## Erro: "Failed to fetch - Network error or CORS issue"
 
 ### Causa Raiz
