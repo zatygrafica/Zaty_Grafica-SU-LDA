@@ -4,6 +4,7 @@ import { resilientDataProvider as dataProvider } from '../services/resilientData
 import { useStore } from './useStore';
 import { supabase } from '../services/supabaseClient';
 import { convertKeysToCamelCase } from '../utils/case';
+import { chatNotificationSound } from '../services/chatNotificationSound';
 
 interface ChatState {
   conversations: Conversation[];
@@ -338,6 +339,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
           messages[normalized.id] = normalized;
 
+          // Play notification sound for incoming messages (not sent by current user)
+          const isIncomingMessage =
+            payload.eventType === 'INSERT' &&
+            normalized.senderId !== currentUserId &&
+            state.soundEnabled;
+
+          if (isIncomingMessage) {
+            // Play sound asynchronously without blocking
+            void chatNotificationSound.play().catch((error) => {
+              console.warn('[ChatStore] Failed to play notification sound:', error);
+            });
+          }
+
           const baseConversations = state.conversations;
           const participantIds =
             normalized.conversationId.split('-').filter(Boolean);
@@ -390,5 +404,11 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
   },
 
-  toggleSound: () => set((state) => ({ soundEnabled: !state.soundEnabled })),
+  toggleSound: () => {
+    set((state) => {
+      const newSoundEnabled = !state.soundEnabled;
+      chatNotificationSound.setEnabled(newSoundEnabled);
+      return { soundEnabled: newSoundEnabled };
+    });
+  },
 }));
