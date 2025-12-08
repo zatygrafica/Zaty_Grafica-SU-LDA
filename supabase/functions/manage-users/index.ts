@@ -107,7 +107,7 @@ const handleList = async () => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, full_name, name, email, role, permissions, avatar_url, photo_url, is_blocked, created_at, updated_at')
+      .select('id, full_name, email, role, permissions, avatar_url, photo_url, is_blocked, created_at, updated_at')
       .order('created_at', { ascending: false });
 
     if (error) {
