@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Purchase, Expense } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { useMaterialStore } from './useMaterialStore';
 import { useFinanceStore } from './useFinanceStore';
 import { useStore } from './useStore';

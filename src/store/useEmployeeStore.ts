@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Employee, EmployeeDocument } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { useStore } from './useStore';
 
 type EmployeeInput = Omit<Employee, 'id' | 'documents' | 'createdAt' | 'updatedAt'> & { documents?: EmployeeDocument[] };

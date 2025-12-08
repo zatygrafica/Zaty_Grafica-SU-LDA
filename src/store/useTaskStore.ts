@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Task } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { useStore } from './useStore';
 import { useClientStore } from './useClientStore';
 

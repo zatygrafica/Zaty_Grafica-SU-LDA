@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { AppSettings } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { createDefaultSettings } from './settingsDefaults';
 import { supabase } from '../services/supabaseClient';
 

@@ -1,6 +1,6 @@
 ﻿import { create } from 'zustand';
 import type { Note } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { supabase } from '../services/supabaseClient';
 import { convertKeysToCamelCase } from '../utils/case';
 import { useStore } from './useStore';

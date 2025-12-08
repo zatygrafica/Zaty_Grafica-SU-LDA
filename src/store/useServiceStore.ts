@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Service } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 
 type ServiceInput = Omit<Service, 'id' | 'createdAt' | 'updatedAt'>;
 

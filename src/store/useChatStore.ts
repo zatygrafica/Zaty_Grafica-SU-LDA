@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { ChatMessage, Conversation } from '../types';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { useStore } from './useStore';
 import { supabase } from '../services/supabaseClient';
 import { convertKeysToCamelCase } from '../utils/case';

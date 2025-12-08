@@ -8,7 +8,7 @@ import i18n from '../i18n';
 import { useSettingsStore } from './useSettingsStore';
 import { useAuthStore } from './useAuthStore';
 import { createDefaultSettings } from './settingsDefaults';
-import { supabaseDataProvider as dataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider as dataProvider } from '../services/resilientDataProvider';
 import { generateId } from '../utils/id';
 
 const getPreferredTheme = (): 'light' | 'dark' => {

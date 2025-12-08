@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { DocumentTemplate, GeneratedDocument } from '../types';
 import documentTemplates from '../data/documentTemplates';
 import { useStore } from './useStore';
-import { supabaseDataProvider } from '../services/supabaseDataProvider';
+import { resilientDataProvider } from '../services/resilientDataProvider';
 
 const seedTemplates: DocumentTemplate[] = documentTemplates.map((template) => ({
   ...template,
@@ -55,7 +55,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
   loadTemplates: async () => {
     set({ templatesLoading: true, templatesError: null });
     try {
-      const response = await supabaseDataProvider.list('document_templates');
+      const response = await resilientDataProvider.list('document_templates');
       const remoteTemplates: DocumentTemplate[] = Array.isArray(response?.data)
         ? response?.data ?? []
         : response?.data
@@ -86,7 +86,7 @@ export const useDocumentStore = create<DocumentState>((set) => ({
     } as DocumentTemplate;
 
     try {
-      const response = await supabaseDataProvider.create('document_templates', payload);
+      const response = await resilientDataProvider.create('document_templates', payload);
       const saved: DocumentTemplate = Array.isArray(response?.data)
         ? response?.data?.[0] ?? payload
         : (response?.data as DocumentTemplate) ?? payload;
