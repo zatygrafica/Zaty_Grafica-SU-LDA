@@ -66,7 +66,7 @@ const PasswordConfirmationModal: React.FC<PasswordConfirmationModalProps> = ({
           </div>
         </div>
         <Input
-          label="Senha do Administrador"
+          label={t('security.admin_password')}
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}

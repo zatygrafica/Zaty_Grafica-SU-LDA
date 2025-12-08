@@ -45,6 +45,8 @@
     "nuit": "NUIT",
     "search_placeholder": "Pesquisar...",
     "select": "Selecione",
+    "select_placeholder": "Selecione...",
+    "no_results": "Nenhum resultado.",
     "notes": "Notas",
     "copy": "Copiar",
     "copy_error": "Falha ao copiar o texto.",
@@ -613,6 +615,7 @@
   },
   "security": {
     "incorrect_password": "Senha incorreta",
+    "admin_password": "Senha do Administrador",
     "deletion_password": "Senha de Exclusão",
     "deletion_password_prompt_title": "Senha de Exclusão Necessária",
     "deletion_password_prompt_message": "Para prosseguir com esta ação destrutiva, por favor, insira a senha de exclusão.",
@@ -695,5 +698,33 @@
     "create_or_select_note": "Crie uma nova anotação ou selecione uma da lista.",
     "empty_note": "Anotação vazia...",
     "type_here": "Comece a digitar aqui..."
+  },
+  "login": {
+    "secure_access": "Acesso seguro",
+    "platform_title": "Plataforma interna para controlo total da produção e operações",
+    "platform_description": "Gestão completa da produção gráfica, clientes, pedidos, faturação e controlo financeiro em um ambiente seguro e centralizado.",
+    "card_management": "Gestão centralizada de clientes e pedidos",
+    "card_billing": "Controle de faturação, pagamentos e documentos",
+    "card_indicators": "Indicadores para apoio à decisão",
+    "card_production": "Acompanhamento da produção e prazos",
+    "enter_system": "Entrar no sistema",
+    "email_label": "Email",
+    "email_placeholder": "Insira o seu e-mail",
+    "password_label": "Palavra-passe",
+    "password_placeholder": "Insira a sua palavra-passe",
+    "login_button": "Entrar",
+    "logging_in": "Entrando...",
+    "credentials_info": "Use suas credenciais fornecidas pelo administrador.",
+    "credentials_reminder": "Utilize as credenciais fornecidas pelo administrador."
+  },
+  "sync": {
+    "syncing": "Sincronizando...",
+    "syncing_with_count": "Sincronizando... ({{count}} pendente)",
+    "synced_at": "Sincronizado {{date}}",
+    "offline": "Offline. Verifique a conexão.",
+    "pending": "pendente"
+  },
+  "pwa_update": {
+    "whats_new": "O que há de novo:",
+    "update_later": "Mais tarde"
   }
-}

@@ -45,6 +45,8 @@
         "nuit": "NUIT",
         "search_placeholder": "Search...",
         "select": "Select",
+        "select_placeholder": "Select...",
+        "no_results": "No results.",
         "notes": "Notes",
         "copy": "Copy",
         "copy_error": "Failed to copy text.",
@@ -613,6 +615,7 @@
     },
     "security": {
         "incorrect_password": "Incorrect password",
+        "admin_password": "Administrator Password",
         "deletion_password": "Deletion Password",
         "deletion_password_prompt_title": "Deletion Password Required",
         "deletion_password_prompt_message": "To proceed with this destructive action, please enter the deletion password.",
@@ -695,5 +698,34 @@
         "create_or_select_note": "Create a new note or select one from the list.",
         "empty_note": "Empty note...",
         "type_here": "Start typing here..."
+    },
+    "login": {
+        "secure_access": "Secure access",
+        "platform_title": "Internal platform for complete control of production and operations",
+        "platform_description": "Complete management of graphic production, clients, orders, billing and financial control in a secure and centralized environment.",
+        "card_management": "Centralized client and order management",
+        "card_billing": "Billing, payments and documents control",
+        "card_indicators": "Indicators for decision support",
+        "card_production": "Production and deadline tracking",
+        "enter_system": "Enter the system",
+        "email_label": "Email",
+        "email_placeholder": "Enter your email",
+        "password_label": "Password",
+        "password_placeholder": "Enter your password",
+        "login_button": "Login",
+        "logging_in": "Logging in...",
+        "credentials_info": "Use your credentials provided by the administrator.",
+        "credentials_reminder": "Use the credentials provided by the administrator."
+    },
+    "sync": {
+        "syncing": "Syncing...",
+        "syncing_with_count": "Syncing... ({{count}} pending)",
+        "synced_at": "Synced {{date}}",
+        "offline": "Offline. Check your connection.",
+        "pending": "pending"
+    },
+    "pwa_update": {
+        "whats_new": "What's new:",
+        "update_later": "Later"
     }
 }

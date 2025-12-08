@@ -36,7 +36,7 @@ const PwaUpdateNotification: React.FC<PwaUpdateNotificationProps> = ({ onUpdate,
         </p>
         
         <div className="max-h-60 overflow-y-auto text-left bg-gray-50 dark:bg-neutral-800/50 p-4 rounded-lg border dark:border-neutral-700/50">
-          <h4 className="font-semibold text-gray-900 dark:text-white mb-3">O que há de novo:</h4>
+          <h4 className="font-semibold text-gray-900 dark:text-white mb-3">{t('pwa_update.whats_new')}</h4>
           <ul className="space-y-2 list-disc list-inside text-sm text-gray-700 dark:text-gray-300">
             {notesList.map((note, index) => (
               <li key={index} dangerouslySetInnerHTML={{

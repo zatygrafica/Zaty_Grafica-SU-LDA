@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, forwardRef } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 
 interface ComboboxOption {
@@ -30,6 +31,7 @@ const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(({
   required = false,
   className,
 }, ref) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(({
           )}
         >
           <span className="block truncate">
-            {selectedOption ? selectedOption.label : <span className="text-gray-400 dark:text-gray-500">{placeholder || 'Selecione...'}</span>}
+            {selectedOption ? selectedOption.label : <span className="text-gray-400 dark:text-gray-500">{placeholder || t('common.select_placeholder')}</span>}
           </span>
           <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
             <ChevronDown className="h-5 w-5 text-gray-400" aria-hidden="true" />
@@ -103,14 +105,14 @@ const Combobox = forwardRef<HTMLButtonElement, ComboboxProps>(({
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   className="w-full rounded-md border border-gray-300 bg-white dark:bg-neutral-800 dark:border-neutral-700 py-1.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  placeholder="Pesquisar..."
+                  placeholder={t('common.search_placeholder')}
                   autoFocus
                 />
               </div>
             </div>
             {filteredOptions.length === 0 && query !== '' ? (
               <div className="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300">
-                Nenhum resultado.
+                {t('common.no_results')}
               </div>
             ) : (
               filteredOptions.map(option => (

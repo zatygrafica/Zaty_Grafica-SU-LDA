@@ -1,23 +1,39 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSyncStore } from '../../store/useSyncStore';
 import { CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { pt } from 'date-fns/locale';
+import { pt, enUS } from 'date-fns/locale';
 
 const SyncStatusIndicator: React.FC = () => {
+  const { t, i18n } = useTranslation();
   const { status, queue, lastSync } = useSyncStore();
 
   const getStatusInfo = (): { Icon: React.ElementType; color: string; text: string; spin: boolean } | null => {
+    const locale = i18n.language === 'pt' ? pt : enUS;
+
     if (queue.length > 0) {
-      return { Icon: RefreshCw, color: 'text-blue-500', text: `Sincronizando... (${queue.length} pendente${queue.length > 1 ? 's' : ''})`, spin: true };
+      return {
+        Icon: RefreshCw,
+        color: 'text-blue-500',
+        text: t('sync.syncing_with_count', { count: queue.length }),
+        spin: true
+      };
     }
     switch (status) {
       case 'syncing':
-        return { Icon: RefreshCw, color: 'text-blue-500', text: 'Sincronizando...', spin: true };
+        return { Icon: RefreshCw, color: 'text-blue-500', text: t('sync.syncing'), spin: true };
       case 'synced':
-        return { Icon: CheckCircle, color: 'text-green-500', text: `Sincronizado ${lastSync ? formatDistanceToNow(lastSync, { locale: pt, addSuffix: true }) : ''}`, spin: false };
+        return {
+          Icon: CheckCircle,
+          color: 'text-green-500',
+          text: t('sync.synced_at', {
+            date: lastSync ? formatDistanceToNow(lastSync, { locale, addSuffix: true }) : ''
+          }),
+          spin: false
+        };
       case 'error':
-        return { Icon: AlertCircle, color: 'text-red-500', text: 'Offline. Verifique a conexão.', spin: false };
+        return { Icon: AlertCircle, color: 'text-red-500', text: t('sync.offline'), spin: false };
       case 'idle':
       default:
         return null;
