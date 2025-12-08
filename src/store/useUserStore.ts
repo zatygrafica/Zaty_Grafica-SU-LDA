@@ -56,34 +56,82 @@ const mapApiUser = (apiUser: ApiUser): User => ({
   updatedAt: apiUser.updatedAt ? new Date(apiUser.updatedAt) : new Date(),
 });
 
-const callManageUsers = async <T>(action: ManageUsersAction, payload?: Record<string, unknown>): Promise<T> => {
+const callManageUsers = async <T>(action: ManageUsersAction, payload?: Record<string, unknown>, retryCount = 0): Promise<T> => {
   if (!functionsBaseUrl) {
+    console.error('[UserStore] Supabase URL is not configured. Check VITE_SUPABASE_URL in .env.local');
     throw new Error('Supabase URL is not configured');
   }
 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !sessionData?.session?.access_token) {
+    console.error('[UserStore] Authentication error:', sessionError?.message || 'No access token');
     throw new Error('unauthorized');
   }
 
-  const response = await fetch(functionsBaseUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${sessionData.session.access_token}`,
-    },
-    body: JSON.stringify({ action, payload }),
-  });
+  try {
+    console.log(`[UserStore] Calling manage-users function: ${action}`, payload ? '(with payload)' : '');
 
-  const parsed = (await response.json().catch(() => ({}))) as { data?: T; error?: string };
+    const response = await fetch(functionsBaseUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+      },
+      body: JSON.stringify({ action, payload }),
+    });
 
-  if (response.status === 401) throw new Error('unauthorized');
-  if (response.status === 403) throw new Error('forbidden');
-  if (!response.ok || parsed.error) {
-    throw new Error(parsed.error || 'User function failed');
+    const parsed = (await response.json().catch((err) => {
+      console.error('[UserStore] Failed to parse JSON response:', err);
+      return {};
+    })) as { data?: T; error?: string };
+
+    if (response.status === 401) {
+      console.error('[UserStore] Unauthorized (401) - Token may be expired or invalid');
+      throw new Error('unauthorized');
+    }
+    if (response.status === 403) {
+      console.error('[UserStore] Forbidden (403) - User lacks admin permissions');
+      throw new Error('forbidden');
+    }
+    if (response.status === 404) {
+      console.error('[UserStore] Edge Function not found (404) - Check if manage-users is deployed');
+      throw new Error('Edge Function not deployed or URL misconfigured');
+    }
+    if (response.status >= 500) {
+      console.error('[UserStore] Server error:', response.status, parsed.error);
+      // Retry on server errors with exponential backoff
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        console.log(`[UserStore] Retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return callManageUsers<T>(action, payload, retryCount + 1);
+      }
+      throw new Error(parsed.error || `Server error (${response.status})`);
+    }
+    if (!response.ok || parsed.error) {
+      console.error('[UserStore] Request failed:', response.status, parsed.error);
+      throw new Error(parsed.error || 'User function failed');
+    }
+
+    console.log(`[UserStore] Successfully completed action: ${action}`);
+    return parsed.data as T;
+  } catch (error) {
+    // Handle network errors (fetch failures)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('[UserStore] Network error - Failed to connect to Edge Function:', error.message);
+      console.error('[UserStore] Check: 1) Internet connection, 2) CORS settings, 3) Edge Function deployment');
+
+      // Retry on network errors
+      if (retryCount < 2) {
+        const delay = Math.pow(2, retryCount) * 1000;
+        console.log(`[UserStore] Retrying network request in ${delay}ms... (attempt ${retryCount + 1}/2)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return callManageUsers<T>(action, payload, retryCount + 1);
+      }
+      throw new Error('Failed to fetch - Network error or CORS issue');
+    }
+    throw error;
   }
-
-  return parsed.data as T;
 };
 
 const mapProfileToUser = (profile: ProfileRecord): User => ({
@@ -123,16 +171,33 @@ export const useUserStore = create<UserState>((set, get) => ({
   hasLoaded: false,
   error: null,
 
-  listUsers: async (_force = false) => {
-    if (get().loading) return get().users;
-    set({ loading: true, hasLoaded: false, error: null });
+  listUsers: async (force = false) => {
+    const state = get();
+
+    // Don't fetch if already loading
+    if (state.loading) {
+      console.log('[UserStore] Already loading users, skipping duplicate request');
+      return state.users;
+    }
+
+    // Don't fetch if already loaded (unless forced)
+    if (state.hasLoaded && !force) {
+      console.log('[UserStore] Users already loaded, returning cached data');
+      return state.users;
+    }
+
+    console.log(`[UserStore] Fetching users list (force: ${force})`);
+    set({ loading: true, error: null });
+
     try {
       const apiUsers = await callManageUsers<ApiUser[]>('list');
       const normalized = apiUsers.map((u) => normalizeUser(mapApiUser(u)));
       set({ users: normalized, loading: false, hasLoaded: true });
+      console.log(`[UserStore] Successfully loaded ${normalized.length} users`);
       return normalized;
     } catch (error) {
       const message = (error as Error).message;
+      console.error('[UserStore] Failed to load users:', message);
       set({ loading: false, hasLoaded: false, error: message });
       throw error;
     }

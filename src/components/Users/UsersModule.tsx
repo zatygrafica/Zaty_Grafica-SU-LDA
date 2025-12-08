@@ -15,9 +15,7 @@ import DeleteUserConfirmationModal from './DeleteUserConfirmationModal';
 import TransferDataModal from './TransferDataModal';
 import TransferProgressModal from './TransferProgressModal';
 import { generateId } from '../../utils/id';
-import ModuleDataState from '../Common/ModuleDataState';
 import { CardGridSkeleton, TableSkeleton } from '../Common/SkeletonLoaders';
-import { useIncrementalList } from '../../hooks/useIncrementalList';
 import { storageService } from '../../services/storageService';
 import Avatar from '../Common/Avatar';
 
@@ -38,50 +36,66 @@ const UsersModule: React.FC = () => {
   const [userToProcess, setUserToProcess] = useState<User | null>(null);
 
   useEffect(() => {
-    listUsers().catch((error) => {
-      console.error('Failed to load users:', error);
-    });
+    // Only load if not already loaded or loading
+    if (!hasLoaded && !loading) {
+      listUsers().catch((error) => {
+        console.error('[UsersModule] Failed to load users:', error);
+      });
+    }
     const unsubscribe = subscribeToRealtime();
     return () => unsubscribe();
-  }, [listUsers, subscribeToRealtime]);
+  }, []); // Empty deps - only run once on mount
 
-  // Resolve signed URLs para avatares com cache em memoria (rapido)
+  // Optimize avatar loading - only load when users change, not on every render
   useEffect(() => {
-    // 1) Preenche imediatamente com URLs ja cacheadas (evita atraso visual)
-    const cachedEntries = users
-      .filter((u) => u.photoUrl && !avatarCache[u.id])
-      .map((u) => {
-        const cached = storageService.getCachedSignedUrl(u.photoUrl!, 'profile_photos');
-        return cached ? [u.id, cached] as const : null;
-      })
-      .filter((e): e is [string, string] => Boolean(e));
+    if (users.length === 0) return;
 
-    if (cachedEntries.length > 0) {
-      setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(cachedEntries) }));
-    }
-
-    // 2) Busca assincrona para garantir URL atualizada/renovada
     const loadAvatars = async () => {
-      const entries = await Promise.all(
-        users
-          .filter((u) => u.photoUrl && !avatarCache[u.id])
-          .map(async (u) => {
+      // Filter users that need avatar URLs and aren't already cached
+      const usersNeedingAvatars = users.filter((u) => u.photoUrl && !avatarCache[u.id]);
+
+      if (usersNeedingAvatars.length === 0) return;
+
+      console.log(`[UsersModule] Loading ${usersNeedingAvatars.length} avatar URLs...`);
+
+      // First, quickly populate with any cached URLs
+      const cachedEntries: [string, string][] = [];
+      usersNeedingAvatars.forEach((u) => {
+        const cached = storageService.getCachedSignedUrl(u.photoUrl!, 'profile_photos');
+        if (cached) {
+          cachedEntries.push([u.id, cached]);
+        }
+      });
+
+      if (cachedEntries.length > 0) {
+        setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(cachedEntries) }));
+      }
+
+      // Then load fresh signed URLs in batches (limit concurrent requests)
+      const batchSize = 5;
+      for (let i = 0; i < usersNeedingAvatars.length; i += batchSize) {
+        const batch = usersNeedingAvatars.slice(i, i + batchSize);
+        const entries = await Promise.all(
+          batch.map(async (u) => {
             try {
               const url = await storageService.getSignedUrlCached(u.photoUrl!, 900, 'profile_photos');
               return [u.id, url] as const;
             } catch (e) {
-              console.warn('Avatar signed URL fail', e);
+              console.warn('[UsersModule] Avatar signed URL fail for user', u.id, e);
               return null;
             }
           })
-      );
-      const mapped = entries.filter((e): e is [string, string] => Boolean(e));
-      if (mapped.length > 0) {
-        setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(mapped) }));
+        );
+
+        const mapped = entries.filter((e): e is [string, string] => Boolean(e));
+        if (mapped.length > 0) {
+          setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(mapped) }));
+        }
       }
     };
+
     void loadAvatars();
-  }, [users, avatarCache]);
+  }, [users.length]); // Only re-run when number of users changes
 
   const isAdmin = currentUser?.role === 'admin';
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -149,11 +163,28 @@ const UsersModule: React.FC = () => {
             </Button>
           )}
         </div>
-        
-        {loading ? (
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">{t('common.loading')}</div>
+
+        {loading && !hasLoaded ? (
+          isMobile ? (
+            <CardGridSkeleton count={4} />
+          ) : (
+            <TableSkeleton columns={4} rows={5} />
+          )
         ) : loadError ? (
-          <div className="text-center text-sm text-red-500">{loadError}</div>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-red-800 dark:text-red-400 mb-2">
+              {t('common.error', 'Error')}
+            </h3>
+            <p className="text-sm text-red-600 dark:text-red-300">{loadError}</p>
+            <Button
+              onClick={() => listUsers(true)}
+              variant="outline"
+              className="mt-3"
+              size="sm"
+            >
+              {t('common.retry', 'Retry')}
+            </Button>
+          </div>
         ) : users.length === 0 ? (
           <div className="text-center text-sm text-gray-500 dark:text-gray-400">
             {t('users.empty_state', 'Nenhum usuário encontrado')}
