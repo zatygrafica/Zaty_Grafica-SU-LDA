@@ -565,6 +565,8 @@
     "edit_user": "Editar Usuário",
     "full_name": "Nome Completo",
     "role": "Função",
+    "new_password": "Nova Senha",
+    "confirm_password": "Confirmar Senha",
     "password_strength": "Força da Senha",
     "password_strength_levels": {
       "0": "Muito Fraca",

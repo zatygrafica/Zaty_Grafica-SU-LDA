@@ -565,6 +565,8 @@
         "edit_user": "Edit User",
         "full_name": "Full Name",
         "role": "Role",
+        "new_password": "New Password",
+        "confirm_password": "Confirm Password",
         "password_strength": "Password Strength",
         "password_strength_levels": {
             "0": "Very Weak",
