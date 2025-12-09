@@ -22,10 +22,26 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
   const [searchTerm, setSearchTerm] = useState('');
 
   const conversationDetails = useMemo(() => {
-    return conversations
+    console.log('[ConversationList] Building conversation details:', {
+      conversationsCount: conversations.length,
+      usersCount: users.length,
+      currentUserId: currentUser?.id
+    });
+
+    const details = conversations
       .map((convo) => {
         const otherUserId = convo.participantIds.find((id) => id !== currentUser?.id);
         const otherUser = users.find((u) => u.id === otherUserId);
+
+        if (!otherUser) {
+          console.warn('[ConversationList] User not found for conversation:', {
+            convoId: convo.id,
+            participantIds: convo.participantIds,
+            otherUserId,
+            availableUserIds: users.map(u => u.id)
+          });
+        }
+
         const convoMessages = Object.values(messages).filter((m) => m.conversationId === convo.id);
         const lastMessage = convoMessages.sort(
           (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -39,6 +55,13 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
         };
       })
       .filter((details) => details.otherUser);
+
+    console.log('[ConversationList] Final conversation details:', {
+      totalDetails: details.length,
+      uniqueUsers: new Set(details.map(d => d.otherUser?.id)).size
+    });
+
+    return details;
   }, [conversations, messages, users, currentUser, onlineUserIds]);
 
   const usersWithConversation = useMemo(() => {

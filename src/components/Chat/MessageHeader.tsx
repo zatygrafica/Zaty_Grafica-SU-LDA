@@ -14,7 +14,7 @@ interface MessageHeaderProps {
 
 const MessageHeader: React.FC<MessageHeaderProps> = ({ conversation, onBack }) => {
   const { currentUser } = useStore();
-  const { users } = useUserStore();
+  const { users, loading, hasLoaded } = useUserStore();
   const { onlineUserIds } = useChatStore();
 
   const otherUserId =
@@ -23,6 +23,19 @@ const MessageHeader: React.FC<MessageHeaderProps> = ({ conversation, onBack }) =
 
   const otherUser = users.find((u) => u.id === otherUserId);
   const isOnline = otherUserId ? onlineUserIds.includes(otherUserId) : false;
+
+  // Debug: Log when user is not found
+  React.useEffect(() => {
+    if (otherUserId && !otherUser && hasLoaded) {
+      console.warn('[MessageHeader] User not found in store:', {
+        otherUserId,
+        usersCount: users.length,
+        hasLoaded,
+        loading,
+        userIds: users.map((u) => u.id),
+      });
+    }
+  }, [otherUserId, otherUser, hasLoaded, loading, users]);
 
   return (
     <div className="flex items-center p-4 border-b border-gray-200 dark:border-neutral-800">

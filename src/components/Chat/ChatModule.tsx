@@ -12,9 +12,19 @@ const ChatModule: React.FC = () => {
 
   useEffect(() => {
     void listConversations();
-    void useUserStore.getState().listUsers(true);
-    const unsubscribe = subscribeToRealtime();
-    return () => unsubscribe();
+    // Use listUsersForChat instead of listUsers to bypass admin-only Edge Function
+    void useUserStore.getState().listUsersForChat();
+
+    // Subscribe to chat realtime updates
+    const unsubscribeChat = subscribeToRealtime();
+
+    // Subscribe to user profiles realtime updates (for new users/updates)
+    const unsubscribeUsers = useUserStore.getState().subscribeToRealtime();
+
+    return () => {
+      unsubscribeChat();
+      unsubscribeUsers();
+    };
   }, [listConversations, subscribeToRealtime]);
 
   useEffect(() => {

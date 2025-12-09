@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { authService, fetchProfile, upsertProfile } from '../services/authService';
 import type { Profile } from '../types/profile';
+import { cleanupStorage } from '../utils/storageCleanup';
 
 const buildProfileFromUser = (user: User): Profile => ({
   id: user.id,
@@ -45,6 +46,9 @@ const initializeAuth = (set: (partial: Partial<AuthState>) => void) => {
   void (async () => {
     set({ loading: true });
     try {
+      // Clean up old storage on app initialization
+      cleanupStorage();
+
       const session = await authService.getSession();
       const profile = session?.user ? await ensureProfileForUser(session.user) : null;
       set({
@@ -87,6 +91,9 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
     async signIn(email, password) {
       set({ loading: true, error: null });
       try {
+        // Clean up old storage before login to prevent quota errors
+        cleanupStorage();
+
         await authService.signIn({ email, password });
         const session = await authService.getSession();
         const profile = session?.user ? await ensureProfileForUser(session.user) : null;
@@ -98,6 +105,26 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
           initialized: true,
         });
       } catch (error) {
+        // Log the actual error for debugging
+        console.error('[Auth] Login error:', error);
+
+        // Check if error is SPECIFICALLY storage quota related (QuotaExceededError)
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.error('[Auth] Storage quota exceeded during login');
+          set({
+            loading: false,
+            initialized: true,
+            error: 'Armazenamento cheio. Por favor, recarregue a página e tente novamente.'
+          });
+
+          // Clear all storage and reload
+          localStorage.clear();
+          sessionStorage.clear();
+          alert('Seu navegador está com cache cheio. A página será recarregada automaticamente.');
+          window.location.reload();
+          return;
+        }
+
         set({ loading: false, initialized: true, error: (error as Error).message });
         throw error;
       }

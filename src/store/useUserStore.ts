@@ -157,6 +157,7 @@ interface UserState {
   hasLoaded: boolean;
   error: string | null;
   listUsers: (force?: boolean) => Promise<User[]>;
+  listUsersForChat: () => Promise<User[]>;
   getUserById: (id: string) => User | undefined;
   createUser: (userData: UserInput) => Promise<UserOperationResult>;
   updateUserById: (id: string, userData: Partial<User>) => Promise<UserOperationResult>;
@@ -199,6 +200,45 @@ export const useUserStore = create<UserState>((set, get) => ({
       const message = (error as Error).message;
       console.error('[UserStore] Failed to load users:', message);
       set({ loading: false, hasLoaded: false, error: message });
+      throw error;
+    }
+  },
+
+  listUsersForChat: async () => {
+    console.log('[UserStore] Fetching users for chat directly from profiles');
+    set({ loading: true, error: null });
+
+    try {
+      // Query profiles table directly (RLS policy allows authenticated users to see all profiles)
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, role, permissions, avatar_url, created_at, updated_at')
+        .order('full_name', { ascending: true });
+
+      if (error) {
+        console.error('[UserStore] Failed to fetch profiles for chat:', error);
+        set({ loading: false, error: error.message });
+        throw error;
+      }
+
+      const normalized = (data || []).map((profile) => {
+        const raw = convertKeysToCamelCase(profile as Record<string, unknown>);
+        const user = mapProfileToUser(raw as ProfileRecord);
+        // Debug log to verify name mapping
+        if (!user.name || user.name === 'Unnamed User') {
+          console.warn('[UserStore] User with missing name:', { raw, user });
+        }
+        return normalizeUser(user);
+      });
+
+      set({ users: normalized, loading: false, hasLoaded: true });
+      console.log(`[UserStore] Successfully loaded ${normalized.length} users for chat`);
+      console.log('[UserStore] Sample user:', normalized[0]);
+      return normalized;
+    } catch (error) {
+      const message = (error as Error).message;
+      console.error('[UserStore] Failed to load users for chat:', message);
+      set({ loading: false, error: message });
       throw error;
     }
   },
