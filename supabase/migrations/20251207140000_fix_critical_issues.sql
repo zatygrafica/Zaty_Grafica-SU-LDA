@@ -34,22 +34,32 @@ DROP POLICY IF EXISTS settings_insert_auth ON public.settings;
 DROP POLICY IF EXISTS settings_update_auth ON public.settings;
 
 -- Policy segura: Apenas admins podem ler/modificar settings
-CREATE POLICY settings_admin_access ON public.settings
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role = 'admin'
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+    AND tablename = 'settings'
+    AND policyname = 'settings_admin_access'
+  ) THEN
+    CREATE POLICY settings_admin_access ON public.settings
+      FOR ALL
+      USING (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.role = 'admin'
+        )
+      )
+      WITH CHECK (
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.role = 'admin'
+        )
+      );
+  END IF;
+END$$;
 
 -- ----------------------------------------------------------------
 -- 3. TASKS: Restringir acesso por ownership
@@ -59,26 +69,36 @@ CREATE POLICY settings_admin_access ON public.settings
 DROP POLICY IF EXISTS tasks_read_write ON public.tasks;
 
 -- Policy segura: Acesso apenas a tasks próprias ou se admin/manager
-CREATE POLICY tasks_owner_access ON public.tasks
-  FOR ALL
-  USING (
-    auth.uid() = assigned_to OR
-    auth.uid() = created_by OR
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('admin')
-    )
-  )
-  WITH CHECK (
-    auth.uid() = assigned_to OR
-    auth.uid() = created_by OR
-    EXISTS (
-      SELECT 1 FROM public.profiles
-      WHERE profiles.id = auth.uid()
-      AND profiles.role IN ('admin')
-    )
-  );
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+    AND tablename = 'tasks'
+    AND policyname = 'tasks_owner_access'
+  ) THEN
+    CREATE POLICY tasks_owner_access ON public.tasks
+      FOR ALL
+      USING (
+        auth.uid() = assigned_to OR
+        auth.uid() = created_by OR
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.role IN ('admin')
+        )
+      )
+      WITH CHECK (
+        auth.uid() = assigned_to OR
+        auth.uid() = created_by OR
+        EXISTS (
+          SELECT 1 FROM public.profiles
+          WHERE profiles.id = auth.uid()
+          AND profiles.role IN ('admin')
+        )
+      );
+  END IF;
+END$$;
 
 -- ----------------------------------------------------------------
 -- 4. STORAGE: Restringir acesso por ownership
@@ -87,6 +107,8 @@ CREATE POLICY tasks_owner_access ON public.tasks
 
 DROP POLICY IF EXISTS "app-files-select" ON storage.objects;
 DROP POLICY IF EXISTS "app-files-delete" ON storage.objects;
+DROP POLICY IF EXISTS "app-files-select-secure" ON storage.objects;
+DROP POLICY IF EXISTS "app-files-delete-secure" ON storage.objects;
 
 -- Policy segura para leitura: Apenas arquivos próprios ou admins
 CREATE POLICY "app-files-select-secure" ON storage.objects
