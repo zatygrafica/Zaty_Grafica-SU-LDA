@@ -8,12 +8,18 @@ const signedUrlCache: Record<string, { url: string; expiresAt: number }> = {};
 const cacheKey = (bucket: string, path: string) => `${bucket}:${path}`;
 const nowSec = () => Math.floor(Date.now() / 1000);
 const loadPersistedCache = () => {
-  if (typeof sessionStorage === 'undefined') return;
+  if (typeof localStorage === 'undefined') return;
   try {
-    const raw = sessionStorage.getItem('storage_signed_urls');
+    const raw = localStorage.getItem('storage_signed_urls');
     if (raw) {
       const parsed = JSON.parse(raw) as Record<string, { url: string; expiresAt: number }>;
-      Object.assign(signedUrlCache, parsed);
+      // Remove entradas expiradas ao carregar
+      const now = nowSec();
+      Object.entries(parsed).forEach(([key, entry]) => {
+        if (entry.expiresAt > now) {
+          signedUrlCache[key] = entry;
+        }
+      });
     }
   } catch {
     /* ignore */
@@ -21,9 +27,14 @@ const loadPersistedCache = () => {
 };
 
 const persistCache = () => {
-  if (typeof sessionStorage === 'undefined') return;
+  if (typeof localStorage === 'undefined') return;
   try {
-    sessionStorage.setItem('storage_signed_urls', JSON.stringify(signedUrlCache));
+    // Remove entradas expiradas antes de persistir
+    const now = nowSec();
+    const validEntries = Object.entries(signedUrlCache)
+      .filter(([, entry]) => entry.expiresAt > now)
+      .reduce((acc, [key, entry]) => ({ ...acc, [key]: entry }), {});
+    localStorage.setItem('storage_signed_urls', JSON.stringify(validEntries));
   } catch {
     /* ignore */
   }
