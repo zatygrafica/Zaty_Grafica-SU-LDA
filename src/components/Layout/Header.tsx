@@ -38,9 +38,17 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
     setLanguage(newLanguage);
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
     setShowUserMenu(false);
+    try {
+      await logout();
+      // Force reload to clear all state and redirect to login
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Even if logout fails, reload the page to clear state
+      window.location.href = '/';
+    }
   };
 
   const handleThemeChange = () => {

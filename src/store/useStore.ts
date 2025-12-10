@@ -156,6 +156,7 @@ export const useStore = create<AppState>((set, get) => {
         console.error('Erro ao sair da sessão', error);
       }
 
+      // Clear all state
       set({
         currentUser: null,
         originalUser: null,
@@ -163,6 +164,9 @@ export const useStore = create<AppState>((set, get) => {
         appStatus: 'loading',
         notifications: [],
         pendingOrderForClient: null,
+        auditLogs: [],
+        payments: [],
+        paymentsLoaded: false,
       });
     },
     updateCurrentUser: (userData) =>
