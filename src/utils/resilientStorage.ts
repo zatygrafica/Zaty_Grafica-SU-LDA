@@ -96,12 +96,27 @@ export const createResilientStorage = (): StorageLike => {
   const fallbackAndPersist = (key: string, value: string) => {
     for (const candidate of providers) {
       if (candidate.storage === active) continue;
-      if (!isWritable(candidate.storage)) continue;
 
+      // Try to write to this candidate
       if (trySet(candidate.storage, candidate.name, key, value)) {
         console.warn(`[Storage] Switching to ${candidate.name} fallback for Supabase auth.`);
         active = candidate.storage;
         return;
+      }
+
+      // If candidate is sessionStorage and it's full, try clearing it
+      if (candidate.name === 'sessionStorage') {
+        console.warn('[Storage] sessionStorage full, clearing it...');
+        try {
+          sessionStorage.clear();
+          if (trySet(candidate.storage, candidate.name, key, value)) {
+            console.log('[Storage] Successfully saved after clearing sessionStorage');
+            active = candidate.storage;
+            return;
+          }
+        } catch (clearError) {
+          console.error('[Storage] Even clearing sessionStorage failed:', clearError);
+        }
       }
     }
 
@@ -117,9 +132,22 @@ export const createResilientStorage = (): StorageLike => {
     } catch (error) {
       // If localStorage is active, try to clean it up and retry once
       if (providers.find((candidate) => candidate.storage === active && candidate.name === 'localStorage')) {
+        console.warn('[Storage] localStorage full, attempting cleanup...');
         cleanupStorage();
         if (trySet(active, 'localStorage', key, value)) {
           return;
+        }
+
+        // If still failing, clear EVERYTHING and retry
+        console.error('[Storage] Cleanup failed, clearing ALL localStorage');
+        try {
+          localStorage.clear();
+          if (trySet(active, 'localStorage', key, value)) {
+            console.log('[Storage] Successfully saved after clearing localStorage');
+            return;
+          }
+        } catch (clearError) {
+          console.error('[Storage] Even clearing localStorage failed:', clearError);
         }
       }
 
