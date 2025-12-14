@@ -111,7 +111,11 @@
     },
     "top_services": "Serviços Populares",
     "orders_count": "{{count}} pedidos",
-    "new_this_month": "novos este mês"
+    "new_this_month": "novos este mês",
+    "low_stock_alert": "Alerta de Estoque Baixo",
+    "manage_stock": "Gerir Estoque",
+    "stock_ok_title": "Estoque OK",
+    "stock_ok_message": "Todos os materiais têm estoque suficiente."
   },
   "clients": {
     "title": "Clientes",
@@ -130,6 +134,31 @@
     "company": "Pessoa Jurídica",
     "company_name": "Nome da Empresa",
     "legal_representative": "Representante Legal",
+    "export_contacts": "Exportar Contactos",
+    "export": {
+      "title": "Exportar Contactos",
+      "filter_options": "Opções de Filtro",
+      "filter_by_type": "Filtrar por Tipo",
+      "all_types": "Todos os Tipos",
+      "export_options": "Opções de Exportação",
+      "contact_type": "Tipo de Contacto",
+      "phones_only": "Apenas Telefones",
+      "emails_only": "Apenas E-mails",
+      "phones_and_emails": "Telefones e E-mails",
+      "separator": "Separador",
+      "comma": "Vírgula (,)",
+      "semicolon": "Ponto e Vírgula (;)",
+      "results_found": "{{count}} contactos encontrados",
+      "copy_to_clipboard": "Copiar para Área de Transferência",
+      "export_txt": "Exportar TXT",
+      "export_csv": "Exportar CSV",
+      "contacts_copied": "{{count}} contactos copiados com sucesso!"
+    },
+    "profile": {
+      "title": "Perfil do Cliente",
+      "total_spent": "Total Gasto",
+      "daily_total": "Total Diário"
+    },
     "form": {
       "name_required": "O nome é obrigatório.",
       "phone_required": "O telefone é obrigatório.",
@@ -137,7 +166,10 @@
       "email_invalid": "Formato de e-mail inválido.",
       "clientType_required": "O tipo de cliente é obrigatório.",
       "companyName_required": "O nome da empresa é obrigatório.",
-      "nuit_required_company": "O NUIT é obrigatório para empresas."
+      "nuit_required_company": "O NUIT é obrigatório para empresas.",
+      "duplicate_title": "Cliente Duplicado",
+      "duplicate_message": "Já existe um cliente com este telefone.",
+      "duplicate_action": "Entendi"
     }
   },
   "services": {
@@ -279,6 +311,8 @@
     "document_number": "Nº do Documento",
     "neighborhood": "Bairro",
     "city": "Cidade",
+    "attendance_saved_success": "Frequência registada com sucesso!",
+    "attendance_saved_error": "Erro ao registar frequência",
     "form": {
       "name_required": "O nome é obrigatório.",
       "phone_required": "O telefone é obrigatório.",

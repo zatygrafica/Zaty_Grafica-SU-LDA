@@ -111,7 +111,11 @@
         },
         "top_services": "Top Services",
         "orders_count": "{{count}} orders",
-        "new_this_month": "new this month"
+        "new_this_month": "new this month",
+        "low_stock_alert": "Low Stock Alert",
+        "manage_stock": "Manage Stock",
+        "stock_ok_title": "Stock OK",
+        "stock_ok_message": "All materials have sufficient stock."
     },
     "clients": {
         "title": "Clients",
@@ -130,6 +134,31 @@
         "company": "Company",
         "company_name": "Company Name",
         "legal_representative": "Legal Representative",
+        "export_contacts": "Export Contacts",
+        "export": {
+            "title": "Export Contacts",
+            "filter_options": "Filter Options",
+            "filter_by_type": "Filter by Type",
+            "all_types": "All Types",
+            "export_options": "Export Options",
+            "contact_type": "Contact Type",
+            "phones_only": "Phones Only",
+            "emails_only": "Emails Only",
+            "phones_and_emails": "Phones and Emails",
+            "separator": "Separator",
+            "comma": "Comma (,)",
+            "semicolon": "Semicolon (;)",
+            "results_found": "{{count}} contacts found",
+            "copy_to_clipboard": "Copy to Clipboard",
+            "export_txt": "Export TXT",
+            "export_csv": "Export CSV",
+            "contacts_copied": "{{count}} contacts copied successfully!"
+        },
+        "profile": {
+            "title": "Client Profile",
+            "total_spent": "Total Spent",
+            "daily_total": "Daily Total"
+        },
         "form": {
             "name_required": "Name is required.",
             "phone_required": "Phone is required.",
@@ -137,7 +166,10 @@
             "email_invalid": "Invalid email format.",
             "clientType_required": "Client type is required.",
             "companyName_required": "Company name is required.",
-            "nuit_required_company": "NUIT is required for companies."
+            "nuit_required_company": "NUIT is required for companies.",
+            "duplicate_title": "Duplicate Client",
+            "duplicate_message": "A client with this phone number already exists.",
+            "duplicate_action": "Got it"
         }
     },
     "services": {
@@ -279,6 +311,8 @@
         "document_number": "Document No.",
         "neighborhood": "Neighborhood",
         "city": "City",
+        "attendance_saved_success": "Attendance registered successfully!",
+        "attendance_saved_error": "Error registering attendance",
         "form": {
             "name_required": "Name is required.",
             "phone_required": "Phone is required.",
