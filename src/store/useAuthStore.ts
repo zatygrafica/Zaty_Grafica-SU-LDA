@@ -14,12 +14,32 @@ const buildProfileFromUser = (user: User): Profile => ({
   phone: (user.user_metadata?.phone as string | undefined) ?? null,
 });
 
-const ensureProfileForUser = async (user: User): Promise<Profile> => {
-  const existing = await fetchProfile(user.id);
-  if (existing) return existing;
-  const profile = buildProfileFromUser(user);
-  await upsertProfile(profile);
-  return profile;
+const ensureProfileForUser = async (user: User, retryCount = 0): Promise<Profile> => {
+  try {
+    console.log(`[Auth] ensureProfileForUser attempt ${retryCount + 1} for user:`, user.email);
+    const existing = await fetchProfile(user.id);
+    if (existing) {
+      console.log('[Auth] Profile found:', existing);
+      return existing;
+    }
+
+    console.log('[Auth] No profile found, creating new profile...');
+    const profile = buildProfileFromUser(user);
+    await upsertProfile(profile);
+    console.log('[Auth] Profile created successfully');
+    return profile;
+  } catch (error) {
+    console.error('[Auth] ensureProfileForUser error:', error);
+
+    // Retry once if it's a network/fetch error and we haven't retried yet
+    if (retryCount === 0 && (error instanceof TypeError || (error as Error).message?.includes('fetch'))) {
+      console.warn('[Auth] Retrying profile fetch after 500ms...');
+      await new Promise(resolve => setTimeout(resolve, 500));
+      return ensureProfileForUser(user, retryCount + 1);
+    }
+
+    throw error;
+  }
 };
 
 interface AuthState {
@@ -94,13 +114,22 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
         // Clean up old storage before login to prevent quota errors
         cleanupStorage();
 
-        await authService.signIn({ email, password });
+        const { data } = await authService.signIn({ email, password });
+        console.log('[Auth] Sign in completed, waiting for session to be saved...');
 
-        // Wait a bit to ensure session is fully saved and token is set in headers
-        await new Promise(resolve => setTimeout(resolve, 150));
+        // Wait for session to be fully saved and token to be set in headers
+        // Increased from 150ms to 300ms for more reliability
+        await new Promise(resolve => setTimeout(resolve, 300));
 
+        // Verify session is available
         const session = await authService.getSession();
-        const profile = session?.user ? await ensureProfileForUser(session.user) : null;
+        if (!session) {
+          throw new Error('Sessão não foi criada após login. Tente novamente.');
+        }
+
+        console.log('[Auth] Session confirmed, fetching profile...');
+        const profile = session.user ? await ensureProfileForUser(session.user) : null;
+
         set({
           session: session ?? null,
           user: session?.user ?? null,
@@ -108,6 +137,8 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
           loading: false,
           initialized: true,
         });
+
+        console.log('[Auth] Login successful for:', session.user?.email);
       } catch (error) {
         // Log the actual error for debugging
         console.error('[Auth] Login error:', error);
