@@ -111,17 +111,14 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
         // Check if error is SPECIFICALLY storage quota related (QuotaExceededError)
         if (error instanceof DOMException && error.name === 'QuotaExceededError') {
           console.error('[Auth] Storage quota exceeded during login');
+
+          // Limpa storage antigo e permite nova tentativa sem loop de reload
+          cleanupStorage();
           set({
             loading: false,
             initialized: true,
-            error: 'Armazenamento cheio. Por favor, recarregue a página e tente novamente.'
+            error: 'Armazenamento do navegador cheio ou bloqueado. Limpe os dados do site e tente novamente.',
           });
-
-          // Clear all storage and reload
-          localStorage.clear();
-          sessionStorage.clear();
-          alert('Seu navegador está com cache cheio. A página será recarregada automaticamente.');
-          window.location.reload();
           return;
         }
 

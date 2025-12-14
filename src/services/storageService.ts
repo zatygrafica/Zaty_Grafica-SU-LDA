@@ -35,8 +35,26 @@ const persistCache = () => {
       .filter(([, entry]) => entry.expiresAt > now)
       .reduce((acc, [key, entry]) => ({ ...acc, [key]: entry }), {});
     localStorage.setItem('storage_signed_urls', JSON.stringify(validEntries));
-  } catch {
-    /* ignore */
+  } catch (error) {
+    // Se erro de quota, limpa o cache e tenta novamente com dados reduzidos
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      console.warn('[StorageService] Quota exceeded, clearing old cache...');
+      try {
+        localStorage.removeItem('storage_signed_urls');
+        // Mantém apenas as 10 URLs mais recentes
+        const now = nowSec();
+        const recentEntries = Object.entries(signedUrlCache)
+          .filter(([, entry]) => entry.expiresAt > now)
+          .sort(([, a], [, b]) => b.expiresAt - a.expiresAt)
+          .slice(0, 10)
+          .reduce((acc, [key, entry]) => ({ ...acc, [key]: entry }), {});
+        localStorage.setItem('storage_signed_urls', JSON.stringify(recentEntries));
+      } catch (retryError) {
+        // Se ainda falhar, apenas limpa o cache
+        console.error('[StorageService] Failed to persist cache even after cleanup');
+        localStorage.removeItem('storage_signed_urls');
+      }
+    }
   }
 };
 
