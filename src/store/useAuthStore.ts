@@ -95,6 +95,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
         cleanupStorage();
 
         await authService.signIn({ email, password });
+
+        // Wait a bit to ensure session is fully saved and token is set in headers
+        await new Promise(resolve => setTimeout(resolve, 150));
+
         const session = await authService.getSession();
         const profile = session?.user ? await ensureProfileForUser(session.user) : null;
         set({
