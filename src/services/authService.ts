@@ -35,13 +35,26 @@ export const authService = {
 };
 
 async function ensureProfile(user: User) {
-  const { data: existing, error: fetchError } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .maybeSingle();
-  if (fetchError) throw fetchError;
-  if (existing) return existing as Profile;
+  try {
+    const { data: existing, error: fetchError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error('[AuthService] Failed to fetch profile:', fetchError);
+      throw fetchError;
+    }
+
+    if (existing) {
+      console.log('[AuthService] Profile found for user:', user.id);
+      return existing as Profile;
+    }
+  } catch (error) {
+    console.error('[AuthService] Error in ensureProfile:', error);
+    throw error;
+  }
 
   const profile: Profile = {
     id: user.id,
@@ -64,9 +77,26 @@ export async function upsertProfile(profile: Profile) {
 }
 
 export async function fetchProfile(userId: string): Promise<Profile | null> {
-  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
-  if (error) throw error;
-  return data as Profile | null;
+  try {
+    console.log('[AuthService] Fetching profile for user:', userId);
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+
+    if (error) {
+      console.error('[AuthService] fetchProfile error:', error);
+      throw error;
+    }
+
+    if (data) {
+      console.log('[AuthService] Profile fetched successfully');
+    } else {
+      console.warn('[AuthService] No profile found for user:', userId);
+    }
+
+    return data as Profile | null;
+  } catch (error) {
+    console.error('[AuthService] fetchProfile failed:', error);
+    throw error;
+  }
 }
 
 export function mapProfileToUser(profile: Profile): {
