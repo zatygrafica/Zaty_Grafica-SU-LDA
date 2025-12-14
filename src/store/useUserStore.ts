@@ -394,15 +394,14 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 }));
 
-// Bootstrap: ensure users are loaded once on app start and realtime is attached
+// Bootstrap: ensure realtime is attached once on app start
+// Note: listUsers is NOT called automatically because it uses an admin-only Edge Function
+// Modules that need users should call listUsers() (for admin) or listUsersForChat() (for all users)
 let userRealtimeUnsubscribe: (() => void) | null = null;
 const bootstrapUsers = () => {
-  const state = useUserStore.getState();
-  // Load immediately from Supabase profiles
-  void state.listUsers(true).catch((error) => console.error('Failed to load users on bootstrap:', error));
   // Attach realtime only once
   if (!userRealtimeUnsubscribe) {
-    userRealtimeUnsubscribe = state.subscribeToRealtime();
+    userRealtimeUnsubscribe = useUserStore.getState().subscribeToRealtime();
   }
 };
 bootstrapUsers();
