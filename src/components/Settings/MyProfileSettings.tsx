@@ -178,8 +178,11 @@ const MyProfileSettings: React.FC = () => {
       const updatedData: Partial<UserType> = {
         name: data.name,
         email: data.email,
-        photoUrl: finalPhotoPath || undefined,
       };
+
+      if (finalPhotoPath) {
+        updatedData.photoUrl = finalPhotoPath;
+      }
 
       updateCurrentUser(updatedData);
 

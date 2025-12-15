@@ -85,7 +85,7 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
         // Mantém a última URL conhecida para evitar flicker
         setAvatarUrl((prev) => prev ?? cached ?? path);
       });
-  }, [currentUser?.photoUrl]);
+  }, [currentUser?.photoUrl, currentUser?.name]);
 
   return (
     <header className="bg-white dark:bg-neutral-950/70 dark:backdrop-blur-lg border-b border-gray-200/50 dark:border-neutral-800/50 px-4 sm:px-6 py-3 sticky top-0 z-30">

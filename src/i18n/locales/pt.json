@@ -649,6 +649,7 @@
     "user_unblocked_success": "Usuário desbloqueado com sucesso.",
     "profile_photo": "Foto de Perfil",
     "upload_photo": "Carregar Foto",
+    "profile_updated_success": "Perfil atualizado com sucesso.",
     "user_blocked_impersonation_error": "Não é possível acessar como um usuário bloqueado."
   },
   "security": {
