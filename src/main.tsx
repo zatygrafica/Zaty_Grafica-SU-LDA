@@ -7,8 +7,11 @@ import './index.css';
 import './styles/print.css';
 
 // Aplica o tema antes da renderização para evitar "flash" de tema incorreto
+// Prioridade: localStorage > preferência do sistema
+const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
 const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-document.documentElement.classList.toggle('dark', prefersDark);
+const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+document.documentElement.classList.toggle('dark', initialTheme === 'dark');
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

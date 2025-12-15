@@ -90,8 +90,9 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     try {
       const { data, error } = await supabase
         .from<SettingRow>('settings' as any)
-        .upsert({ id: SETTINGS_ID, value: merged } as any)
-        .eq('id', SETTINGS_ID)
+        .upsert({ id: SETTINGS_ID, value: merged } as any, {
+          onConflict: 'id'
+        })
         .select()
         .single();
       if (error) throw error;

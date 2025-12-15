@@ -10,7 +10,7 @@ export const createDefaultSettings = (): AppSettings => ({
   popupFrequency: 15,
   emailNotificationsEnabled: false,
   company: {
-    name: 'ZATY GRAFICA, SU, LTD',
+    name: 'ZATY GRAFICA, SU, LDA',
     address: 'Bairro Namicopo (proximo. 3a Esquadra), Nampula, Mocambique',
     nuit: '401974687',
     phone: '834847306',

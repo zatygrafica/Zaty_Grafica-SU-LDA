@@ -12,8 +12,13 @@ import { resilientDataProvider as dataProvider } from '../services/resilientData
 import { generateId } from '../utils/id';
 
 const getPreferredTheme = (): 'light' | 'dark' => {
-  if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    return 'dark';
+  // Prioridade: localStorage > preferência do sistema
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    if (saved) return saved;
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
   }
   return 'light';
 };
@@ -21,6 +26,8 @@ const getPreferredTheme = (): 'light' | 'dark' => {
 const applyTheme = (theme: 'light' | 'dark') => {
   if (typeof document !== 'undefined') {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    // Persiste no localStorage
+    localStorage.setItem('theme', theme);
   }
 };
 

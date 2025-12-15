@@ -51,7 +51,8 @@
     "copy": "Copiar",
     "copy_error": "Falha ao copiar o texto.",
     "online": "Online",
-    "offline": "Offline"
+    "offline": "Offline",
+    "back": "Voltar"
   },
   "errors": {
     "loading_title": "Falha ao Carregar",
@@ -81,10 +82,11 @@
     "chat": "Chat Interno"
   },
   "company": {
-    "name": "ZATY GRÁFICA, SU, LTD",
+    "name": "ZATY GRÁFICA, SU, LDA",
     "address": "Bairro Namicopo (próximo. 3ª Esquadra), Nampula, Moçambique",
     "nuit": "401974687",
-    "phone": "834847306"
+    "phone": "834847306",
+    "email": "info@zatygrafica.co.mz"
   },
   "dashboard": {
     "welcome_message": "Bem-vindo ao Painel de Gestão",
@@ -698,6 +700,7 @@
     "no_movements": "Nenhuma movimentação de estoque encontrada para este período."
   },
   "pwa": {
+    "install_app": "Instalar Aplicação",
     "update_available_title": "Atualização Disponível",
     "update_available_message": "Uma nova versão do sistema está disponível.",
     "update_now": "Atualizar Agora"
@@ -751,7 +754,10 @@
     "login_button": "Entrar",
     "logging_in": "Entrando...",
     "credentials_info": "Use suas credenciais fornecidas pelo administrador.",
-    "credentials_reminder": "Utilize as credenciais fornecidas pelo administrador."
+    "credentials_reminder": "Utilize as credenciais fornecidas pelo administrador.",
+    "footer": {
+      "all_rights_reserved": "Todos os direitos reservados"
+    }
   },
   "sync": {
     "syncing": "Sincronizando...",
@@ -815,6 +821,164 @@
     "print": {
       "alt_text": "foto para impressao",
       "photo_alt": "foto-{{index}}"
+    }
+  },
+  "legal": {
+    "privacy_policy": {
+      "title": "Política de Privacidade",
+      "last_updated": "Última atualização",
+      "introduction": {
+        "title": "Introdução",
+        "content": "Este documento descreve como o sistema de gestão da ZATY GRÁFICA coleta, utiliza, armazena e protege as informações necessárias para o funcionamento das operações da gráfica."
+      },
+      "data_collected": {
+        "title": "Dados Coletados",
+        "user_data": {
+          "title": "Dados de Utilizadores do Sistema",
+          "email": "Email de acesso",
+          "name": "Nome completo",
+          "role": "Função (Admin ou Utilizador)",
+          "photo": "Fotografia de perfil (opcional)"
+        },
+        "client_data": {
+          "title": "Dados de Clientes",
+          "name": "Nome do cliente ou empresa",
+          "phone": "Número de telefone",
+          "email": "Email (opcional)",
+          "address": "Endereço (opcional)",
+          "nuit": "NUIT (Número Único de Identificação Tributária)"
+        },
+        "employee_data": {
+          "title": "Dados de Funcionários",
+          "name": "Nome completo",
+          "contact": "Informações de contacto",
+          "documents": "Documentos de identificação",
+          "salary": "Informações salariais",
+          "attendance": "Registos de frequência"
+        },
+        "business_data": {
+          "title": "Dados Comerciais",
+          "orders": "Pedidos e ordens de serviço",
+          "invoices": "Faturas e recibos",
+          "payments": "Registos de pagamentos",
+          "materials": "Inventário de materiais",
+          "services": "Serviços oferecidos"
+        }
+      },
+      "data_usage": {
+        "title": "Como Utilizamos os Dados",
+        "operations": "Gestão das operações diárias da gráfica",
+        "invoicing": "Faturação e processamento de pagamentos",
+        "communication": "Comunicação com clientes e funcionários",
+        "reports": "Geração de relatórios financeiros e operacionais",
+        "attendance": "Controlo de frequência de funcionários"
+      },
+      "storage": {
+        "title": "Armazenamento de Dados",
+        "database": "Os dados são armazenados em base de dados segura, com criptografia e controlo de acesso rigoroso.",
+        "local_storage": "Informações de autenticação são temporariamente armazenadas localmente no navegador para manter a sessão ativa.",
+        "documents": "Documentos e ficheiros são armazenados em armazenamento seguro na nuvem."
+      },
+      "security": {
+        "title": "Segurança",
+        "authentication": "Sistema de autenticação com email e senha",
+        "encryption": "Comunicação criptografada (HTTPS)",
+        "access_control": "Controlo de acesso baseado em funções e permissões",
+        "audit": "Registos de atividades para auditoria"
+      },
+      "sharing": {
+        "title": "Compartilhamento de Dados",
+        "content": "Os dados coletados são utilizados exclusivamente para fins internos de gestão da ZATY GRÁFICA. Não compartilhamos informações com terceiros."
+      },
+      "user_rights": {
+        "title": "Direitos do Utilizador",
+        "access": "Acesso aos próprios dados",
+        "correction": "Correção de informações incorretas",
+        "deletion": "Solicitação de exclusão de dados",
+        "export": "Exportação de dados em formato utilizável"
+      },
+      "contact": {
+        "title": "Contacto",
+        "content": "Para questões relacionadas com a privacidade dos seus dados, entre em contacto:"
+      }
+    },
+    "terms_of_use": {
+      "title": "Termos de Uso",
+      "last_updated": "Última atualização",
+      "acceptance": {
+        "title": "Aceitação dos Termos",
+        "content": "Ao utilizar este sistema de gestão, você concorda com os termos e condições aqui estabelecidos. Se não concordar com qualquer parte destes termos, não utilize o sistema."
+      },
+      "system_description": {
+        "title": "Descrição do Sistema",
+        "content": "Este é um sistema interno de gestão desenvolvido para a ZATY GRÁFICA, que oferece as seguintes funcionalidades:",
+        "features": {
+          "clients": "Gestão de clientes (particulares e empresas)",
+          "orders": "Criação e acompanhamento de pedidos",
+          "invoices": "Emissão de faturas e recibos",
+          "payments": "Registo e controlo de pagamentos",
+          "materials": "Gestão de inventário de materiais",
+          "employees": "Gestão de funcionários e frequência",
+          "reports": "Relatórios financeiros e operacionais",
+          "chat": "Sistema de comunicação interna"
+        }
+      },
+      "user_account": {
+        "title": "Conta de Utilizador",
+        "credentials": "Cada utilizador recebe credenciais únicas (email e senha)",
+        "responsibility": "Você é responsável pela segurança das suas credenciais",
+        "unauthorized": "Notifique imediatamente qualquer acesso não autorizado",
+        "sharing": "Não compartilhe suas credenciais com terceiros"
+      },
+      "permissions": {
+        "title": "Permissões e Controlo de Acesso",
+        "content": "O sistema utiliza dois níveis de acesso:",
+        "admin": "Administrador: acesso completo a todas as funcionalidades",
+        "user": "Utilizador: acesso limitado conforme permissões atribuídas",
+        "respect": "Respeite os limites das suas permissões e não tente aceder áreas não autorizadas"
+      },
+      "proper_use": {
+        "title": "Uso Adequado",
+        "intro": "Ao utilizar este sistema, você compromete-se a:",
+        "prohibited": {
+          "illegal": "Não utilizar o sistema para fins ilegais ou não autorizados",
+          "unauthorized": "Não tentar aceder dados ou áreas sem permissão",
+          "harmful": "Não introduzir vírus, malware ou código malicioso",
+          "overload": "Não sobrecarregar o sistema com requisições excessivas",
+          "interference": "Não interferir com o funcionamento normal do sistema"
+        }
+      },
+      "data_backup": {
+        "title": "Dados e Backup",
+        "accuracy": "Garanta a precisão dos dados inseridos",
+        "storage": "Os dados são armazenados de forma segura na base de dados",
+        "backup": "É recomendável manter backups regulares de informações críticas",
+        "retention": "Os dados são mantidos enquanto necessários para as operações da empresa"
+      },
+      "intellectual_property": {
+        "title": "Propriedade Intelectual",
+        "system": "O sistema, seu código-fonte e design são propriedade da ZATY GRÁFICA.",
+        "user_data": "Os dados inseridos pelos utilizadores permanecem propriedade da ZATY GRÁFICA."
+      },
+      "liability": {
+        "title": "Limitação de Responsabilidade",
+        "availability": "O sistema é fornecido \"como está\", sem garantias de disponibilidade ininterrupta",
+        "errors": "Podem ocorrer erros ou interrupções temporárias",
+        "data_loss": "Recomendamos backups regulares para prevenir perda de dados",
+        "decisions": "Decisões comerciais devem ser tomadas com base na análise completa, não apenas nos dados do sistema"
+      },
+      "suspension": {
+        "title": "Suspensão e Cancelamento",
+        "content": "A ZATY GRÁFICA reserva-se o direito de suspender ou cancelar o acesso de qualquer utilizador que viole estes termos ou utilize o sistema de forma inadequada."
+      },
+      "modifications": {
+        "title": "Modificações",
+        "content": "Estes termos podem ser atualizados periodicamente. As alterações entrarão em vigor imediatamente após a publicação. Continue a verificar esta página para se manter informado."
+      },
+      "contact": {
+        "title": "Contacto",
+        "content": "Para questões relacionadas com estes termos, entre em contacto:"
+      }
     }
   }
 }

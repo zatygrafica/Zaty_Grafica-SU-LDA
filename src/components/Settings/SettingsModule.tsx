@@ -357,7 +357,7 @@ const SettingsModule: React.FC = () => {
         </div>
       </div>
        <p className="text-xs text-gray-500 dark:text-gray-400 mt-6 text-center">
-          &copy; {new Date().getFullYear()} ZATY GRÁFICA, SU, LTD. Todos os direitos reservados.
+          &copy; {new Date().getFullYear()} ZATY GRÁFICA, SU, LDA. Todos os direitos reservados.
       </p>
     </div>
   );
