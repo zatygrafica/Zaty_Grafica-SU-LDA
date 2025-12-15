@@ -4,7 +4,6 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { useTranslation } from 'react-i18next';
 import { User as UserType } from '../../types';
-import { useUserStore } from '../../store/useUserStore';
 import { useStore } from '../../store/useStore';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
@@ -12,17 +11,18 @@ import PasswordStrengthMeter from '../Users/PasswordStrengthMeter';
 import { User as UserIcon } from 'lucide-react';
 import { generateId } from '../../utils/id';
 import { storageService } from '../../services/storageService';
+import { supabase } from '../../services/supabaseClient';
 
 type ProfileFormData = Partial<Pick<UserType, 'name' | 'email' | 'password' | 'photoUrl'>>;
 
 const MyProfileSettings: React.FC = () => {
   const { t } = useTranslation();
   const { currentUser, updateCurrentUser, addNotification } = useStore();
-  const { updateUserById } = useUserStore();
   
   const [password, setPassword] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(currentUser?.photoUrl || null);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validationSchema = yup.object().shape({
@@ -39,8 +39,8 @@ const MyProfileSettings: React.FC = () => {
     photoUrl: yup.string().optional().nullable(),
   });
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue } = useForm<ProfileFormData & { confirmPassword?: string }>({
-    resolver: yupResolver(validationSchema),
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm<ProfileFormData & { confirmPassword?: string }>({
+    resolver: yupResolver(validationSchema) as any,
     defaultValues: {
       name: currentUser?.name ?? '',
       email: currentUser?.email ?? '',
@@ -72,65 +72,117 @@ const MyProfileSettings: React.FC = () => {
     }
   }, [currentUser, reset]);
 
-  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // preview imediato enquanto faz upload
-    const tempUrl = URL.createObjectURL(file);
-    setPhotoPreview(tempUrl);
-
-    try {
-      const { path } = await storageService.upload(
-        file,
-        file.name,
-        'user',
-        currentUser?.id,
-        { source: 'profile_photo' },
-        'profile_photos'
-      );
-      const signedUrl = await storageService.getSignedUrlCached(path, 300, 'profile_photos');
-      setPhotoPath(path);
-      setValue('photoUrl', path);
-      setPhotoPreview(signedUrl);
-
-      addNotification({
-        id: generateId(),
-        type: 'success',
-        title: t('common.success'),
-        message: t('users.profile_photo') + ' atualizada.',
-        read: false,
-        createdAt: new Date(),
-      });
-    } catch (error) {
-      console.error('Upload de foto falhou', error);
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
       addNotification({
         id: generateId(),
         type: 'error',
         title: t('common.error'),
-        message: 'Falha ao enviar a foto. Tente novamente.',
+        message: 'Por favor, selecione um arquivo de imagem válido.',
         read: false,
         createdAt: new Date(),
       });
+      return;
     }
+
+    // Validar tamanho (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      addNotification({
+        id: generateId(),
+        type: 'error',
+        title: t('common.error'),
+        message: 'A imagem deve ter no máximo 5MB.',
+        read: false,
+        createdAt: new Date(),
+      });
+      return;
+    }
+
+    // Apenas criar preview - não fazer upload ainda
+    const tempUrl = URL.createObjectURL(file);
+    setPhotoPreview(tempUrl);
+    setPendingPhotoFile(file);
   };
 
   const onSubmit = async (data: ProfileFormData) => {
     if (!currentUser) return;
 
-    const updateData: Partial<UserType> = { 
-      name: data.name,
-      email: data.email,
-      photoUrl: photoPath ?? data.photoUrl,
-    };
-    if (data.password) {
-      updateData.password = data.password;
-    }
+    try {
+      let finalPhotoPath = photoPath;
 
-    const result = await updateUserById(currentUser.id, updateData);
+      // Upload da foto apenas se houver uma pendente
+      if (pendingPhotoFile) {
+        try {
+          const { path } = await storageService.upload(
+            pendingPhotoFile,
+            pendingPhotoFile.name,
+            'user',
+            currentUser.id,
+            { source: 'profile_photo' },
+            'profile_photos'
+          );
+          finalPhotoPath = path;
+          setPhotoPath(path);
+        } catch (uploadError) {
+          console.error('Upload de foto falhou', uploadError);
+          addNotification({
+            id: generateId(),
+            type: 'error',
+            title: t('common.error'),
+            message: 'Falha ao enviar a foto. Perfil atualizado sem a foto.',
+            read: false,
+            createdAt: new Date(),
+          });
+          // Continua sem a foto
+        }
+      }
 
-    if (result.success) {
-      updateCurrentUser(updateData);
+      // Atualizar perfil diretamente na tabela profiles (sem Edge Function)
+      const updatePayload: Record<string, unknown> = {
+        full_name: data.name,
+      };
+
+      if (data.email) {
+        updatePayload.email = data.email;
+      }
+
+      if (finalPhotoPath) {
+        updatePayload.avatar_url = finalPhotoPath;
+      }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update(updatePayload)
+        .eq('id', currentUser.id);
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      // Se houver senha, atualizar via auth
+      if (data.password) {
+        const { error: passwordError } = await supabase.auth.updateUser({
+          password: data.password,
+        });
+
+        if (passwordError) {
+          throw passwordError;
+        }
+      }
+
+      // Atualizar estado local
+      const updatedData: Partial<UserType> = {
+        name: data.name,
+        email: data.email,
+        photoUrl: finalPhotoPath || undefined,
+      };
+
+      updateCurrentUser(updatedData);
+
       addNotification({
         id: generateId(),
         type: 'success',
@@ -139,14 +191,24 @@ const MyProfileSettings: React.FC = () => {
         read: false,
         createdAt: new Date(),
       });
+
+      // Limpar estados temporários
+      setPendingPhotoFile(null);
       reset({ ...data, password: '', confirmPassword: '' });
       setPassword('');
-    } else {
+
+      // Atualizar preview com URL assinada
+      if (finalPhotoPath) {
+        const signedUrl = await storageService.getSignedUrlCached(finalPhotoPath, 300, 'profile_photos');
+        setPhotoPreview(signedUrl);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar perfil:', error);
       addNotification({
         id: generateId(),
         type: 'error',
         title: t('common.error'),
-        message: t(`users.${result.message}`),
+        message: (error as Error).message || 'Erro ao atualizar perfil',
         read: false,
         createdAt: new Date(),
       });
@@ -159,7 +221,16 @@ const MyProfileSettings: React.FC = () => {
       <div className="flex items-center space-x-4">
         <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-neutral-800 flex items-center justify-center overflow-hidden">
           {photoPreview ? (
-            <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+            <img
+              src={photoPreview}
+              alt="Preview"
+              className="w-full h-full object-cover"
+              style={{
+                objectFit: 'cover',
+                imageRendering: 'auto',
+                filter: 'none'
+              }}
+            />
           ) : (
             <UserIcon className="w-12 h-12 text-gray-400" />
           )}
