@@ -34,6 +34,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
   const { createEmployee, updateEmployeeById } = useEmployeeStore();
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(employee?.photoUrl || null);
+  const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const validationSchema = yup.object().shape({
@@ -132,26 +133,26 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
     }
   }, [isOpen, employee, reset]);
 
-  const handlePhotoChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const { path } = await storageService.upload(
-          file,
-          file.name,
-          'employee',
-          employee?.id,
-          { source: 'employee_profile_photo' },
-          'profile_photos'
-        );
-        const signedUrl = await storageService.getSignedUrl(path, 60, 'profile_photos');
-        setPhotoPath(path);
-        setValue('photoUrl', path);
-        setPhotoPreview(signedUrl);
-      } catch (error) {
-        console.error('Falha no upload da foto do funcionário', error);
-      }
+    if (!file) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      console.error('Arquivo inválido: deve ser uma imagem');
+      return;
     }
+
+    // Validar tamanho (máximo 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      console.error('Arquivo muito grande: máximo 5MB');
+      return;
+    }
+
+    // Apenas criar preview - não fazer upload ainda
+    const tempUrl = URL.createObjectURL(file);
+    setPhotoPreview(tempUrl);
+    setPendingPhotoFile(file);
   };
 
   const onSubmit = async (data: EmployeeFormData) => {
@@ -168,10 +169,31 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
         break;
     }
 
+    let finalPhotoPath = photoPath;
+
+    // Upload da foto apenas se houver uma pendente
+    if (pendingPhotoFile) {
+      try {
+        const { path } = await storageService.upload(
+          pendingPhotoFile,
+          pendingPhotoFile.name,
+          'employee',
+          employee?.id,
+          { source: 'employee_profile_photo' },
+          'profile_photos'
+        );
+        finalPhotoPath = path;
+        setPhotoPath(path);
+      } catch (uploadError) {
+        console.error('Upload de foto falhou', uploadError);
+        // Continua sem a foto
+      }
+    }
+
     const finalData = {
       ...data,
       startDate: data.startDate ? parseISO(data.startDate) : undefined,
-      photoUrl: photoPath ?? data.photoUrl,
+      photoUrl: finalPhotoPath ?? data.photoUrl,
     };
 
     if (employee) {
@@ -184,6 +206,9 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
         documents: [],
       });
     }
+
+    // Limpar estados temporários
+    setPendingPhotoFile(null);
     onClose();
   };
 
@@ -200,7 +225,16 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ isOpen, onClose, employee }
         <div className="flex items-center space-x-4">
           <div className="w-24 h-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
             {photoPreview ? (
-              <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+              <img
+                src={photoPreview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+                style={{
+                  objectFit: 'cover',
+                  imageRendering: 'auto',
+                  filter: 'none'
+                }}
+              />
             ) : (
               <User className="w-12 h-12 text-gray-400" />
             )}
