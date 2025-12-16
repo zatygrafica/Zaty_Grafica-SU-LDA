@@ -29,6 +29,7 @@ import MyProfileSettings from './MyProfileSettings';
 import IntelligentCalculator from './IntelligentCalculator';
 import PasswordStrengthMeter from '../Users/PasswordStrengthMeter';
 import DataSettings from './DataSettings';
+import AboutSettings from './AboutSettings';
 import { generateId } from '../../utils/id';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
@@ -335,32 +336,7 @@ const SettingsModule: React.FC = () => {
     );
   };
 
-  const renderSystemInfo = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('settings.system_info')}</h3>
-      <div className="space-y-3 text-sm">
-        <div className="flex justify-between p-3 bg-gray-50/50 dark:bg-neutral-800/30 rounded-lg">
-          <span className="font-medium text-gray-600 dark:text-gray-300">Versão do Sistema:</span>
-          <span className="font-semibold text-gray-900 dark:text-white">1.0.0</span>
-        </div>
-        <div className="flex justify-between p-3 bg-gray-50/50 dark:bg-neutral-800/30 rounded-lg">
-          <span className="font-medium text-gray-600 dark:text-gray-300">Data da Compilação:</span>
-          <span className="font-semibold text-gray-900 dark:text-white">{new Date().toLocaleDateString('pt-PT')}</span>
-        </div>
-        <div className="flex justify-between p-3 bg-gray-50/50 dark:bg-neutral-800/30 rounded-lg">
-          <span className="font-medium text-gray-600 dark:text-gray-300">Ambiente:</span>
-          <span className="font-semibold text-gray-900 dark:text-white">Produção</span>
-        </div>
-        <div className="flex justify-between p-3 bg-gray-50/50 dark:bg-neutral-800/30 rounded-lg">
-          <span className="font-medium text-gray-600 dark:text-gray-300">Desenvolvido por:</span>
-          <span className="font-semibold text-gray-900 dark:text-white">ZATY GRÁFICA</span>
-        </div>
-      </div>
-       <p className="text-xs text-gray-500 dark:text-gray-400 mt-6 text-center">
-          &copy; {new Date().getFullYear()} ZATY GRÁFICA, SU, LDA. Todos os direitos reservados.
-      </p>
-    </div>
-  );
+  const renderSystemInfo = () => <AboutSettings />;
 
   const renderContent = () => {
     switch (activeTab) {

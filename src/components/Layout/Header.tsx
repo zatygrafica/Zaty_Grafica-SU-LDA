@@ -68,18 +68,17 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
     if (cached) {
       avatarCache.current[path] = cached;
       setAvatarUrl(cached);
+    } else {
+      // Se não há cache, mantém a URL atual temporariamente (evita flicker)
+      setAvatarUrl((prev) => prev && prev !== path ? prev : path);
     }
 
-    // Busca/renova URL assinada em segundo plano
+    // Busca/renova URL assinada em segundo plano (sempre, para garantir atualização)
     void storageService
       .getSignedUrlCached(path, 300, 'profile_photos')
       .then((url) => {
-        if (avatarCache.current[path] !== url) {
-          avatarCache.current[path] = url;
-          setAvatarUrl(url);
-        } else {
-          setAvatarUrl((prev) => prev ?? url);
-        }
+        avatarCache.current[path] = url;
+        setAvatarUrl(url);
       })
       .catch(() => {
         // Mantém a última URL conhecida para evitar flicker

@@ -174,7 +174,13 @@ const MyProfileSettings: React.FC = () => {
         }
       }
 
-      // Atualizar estado local
+      // Atualizar preview e cache com URL assinada ANTES de atualizar estado
+      if (finalPhotoPath) {
+        const signedUrl = await storageService.getSignedUrlCached(finalPhotoPath, 300, 'profile_photos');
+        setPhotoPreview(signedUrl);
+      }
+
+      // Atualizar estado local (agora com cache já populado)
       const updatedData: Partial<UserType> = {
         name: data.name,
         email: data.email,
@@ -199,12 +205,6 @@ const MyProfileSettings: React.FC = () => {
       setPendingPhotoFile(null);
       reset({ ...data, password: '', confirmPassword: '' });
       setPassword('');
-
-      // Atualizar preview com URL assinada
-      if (finalPhotoPath) {
-        const signedUrl = await storageService.getSignedUrlCached(finalPhotoPath, 300, 'profile_photos');
-        setPhotoPreview(signedUrl);
-      }
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
       addNotification({
