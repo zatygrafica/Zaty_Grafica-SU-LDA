@@ -30,6 +30,7 @@ import IntelligentCalculator from './IntelligentCalculator';
 import PasswordStrengthMeter from '../Users/PasswordStrengthMeter';
 import DataSettings from './DataSettings';
 import AboutSettings from './AboutSettings';
+import SecuritySettings from './SecuritySettings';
 import { generateId } from '../../utils/id';
 import { useSettingsStore } from '../../store/useSettingsStore';
 
@@ -66,6 +67,12 @@ const SettingsModule: React.FC = () => {
   const [isResetDeletionPasswordConfirmOpen, setIsResetDeletionPasswordConfirmOpen] = useState(false);
   const [newDeletionPassword, setNewDeletionPassword] = useState('');
   const [confirmNewDeletionPassword, setConfirmNewDeletionPassword] = useState('');
+
+  // Security: Idle Timeout State
+  const [idleTimeout, setIdleTimeout] = useState<number>(() => {
+    const saved = localStorage.getItem('security_idle_timeout');
+    return saved ? parseInt(saved, 10) : 3 * 60 * 1000; // Default: 3 minutes
+  });
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -239,18 +246,32 @@ const SettingsModule: React.FC = () => {
     </div>
   );
 
+  const handleIdleTimeoutChange = (timeout: number) => {
+    setIdleTimeout(timeout);
+    // localStorage is already set in SecuritySettings component
+    // Trigger a custom event to notify App.tsx (in addition to storage event)
+    window.dispatchEvent(new CustomEvent('idle-timeout-changed', { detail: timeout }));
+  };
+
   const renderSecuritySettings = () => (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-8">
+      {/* Idle Timeout Configuration */}
+      <SecuritySettings
+        idleTimeout={idleTimeout}
+        onIdleTimeoutChange={handleIdleTimeoutChange}
+      />
+
+      {/* Deletion Password */}
+      <div className="pt-6 border-t border-gray-200 dark:border-gray-700">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('security.reset_deletion_password')}</h3>
         <div className="space-y-4 max-w-md mt-4">
-          <Input 
+          <Input
             label={t('security.new_deletion_password')}
             type="password"
             value={newDeletionPassword}
             onChange={(e) => setNewDeletionPassword(e.target.value)}
           />
-          <Input 
+          <Input
             label={t('security.confirm_new_deletion_password')}
             type="password"
             value={confirmNewDeletionPassword}

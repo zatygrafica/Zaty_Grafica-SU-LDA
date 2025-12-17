@@ -35,19 +35,39 @@ Sistema completo de segurança implementado para proteger o acesso ao sistema co
 2. **src/hooks/useFormAutoSave.ts** - Hook para auto-salvar formulários
 3. **src/components/Auth/ReauthModal.tsx** - Modal de reautenticação
 4. **src/components/Security/SecurityWrapper.tsx** - Wrapper de segurança
-5. **src/services/sessionManager.ts** - Gerenciador de sessão
-6. **src/store/useAuthStore.ts** - Atualizado com controle de bloqueio
+5. **src/components/Settings/SecuritySettings.tsx** - Interface de configuração
+6. **src/services/sessionManager.ts** - Gerenciador de sessão
+7. **src/store/useAuthStore.ts** - Atualizado com controle de bloqueio
+8. **src/App.tsx** - Atualizado com gerenciamento dinâmico de timeout
+9. **src/components/Settings/SettingsModule.tsx** - Integração com SecuritySettings
 
 ## 🔧 Configuração
 
 ### Ajustar Tempo de Inatividade
 
-Em [src/App.tsx](src/App.tsx):
+#### Via Interface (Recomendado)
+
+1. Acesse **Configurações → Segurança**
+2. Selecione o tempo de inatividade desejado:
+   - 30 segundos (apenas testes)
+   - 1 minuto
+   - 2 minutos
+   - 3 minutos (Padrão)
+   - 5 minutos
+   - 10 minutos
+   - 15 minutos (Recomendado)
+   - 30 minutos
+   - 60 minutos (1 hora)
+3. A alteração é aplicada imediatamente
+
+#### Via Código
+
+Em [src/App.tsx](src/App.tsx), o timeout é carregado automaticamente do localStorage:
 ```tsx
-<SecurityWrapper
-  enabled={true}
-  idleTimeout={5 * 60 * 1000} // 5 minutos ao invés de 3
->
+const [idleTimeout, setIdleTimeout] = useState<number>(() => {
+  const saved = localStorage.getItem('security_idle_timeout');
+  return saved ? parseInt(saved, 10) : 3 * 60 * 1000; // Default: 3 minutes
+});
 ```
 
 ### Desabilitar Sistema
@@ -119,6 +139,17 @@ checkInterval: 30 * 1000            // Intervalo de verificação
 - ⚠️ Rate limiting deve ser server-side
 - ⚠️ Logs de auditoria devem ser no banco
 
+## ⚙️ Funcionalidades da Configuração
+
+### Interface de Configuração de Timeout
+- ✅ 9 opções predefinidas de timeout (30s até 60min)
+- ✅ Indicadores visuais (Padrão, Recomendado)
+- ✅ Descrições explicativas para cada opção
+- ✅ Aviso para timeouts muito curtos (<2min)
+- ✅ Persistência em localStorage
+- ✅ Aplicação imediata das mudanças
+- ✅ Sincronização entre abas (via storage events)
+
 ## 📝 Próximas Melhorias
 
 - [ ] Countdown antes do bloqueio
@@ -129,5 +160,6 @@ checkInterval: 30 * 1000            // Intervalo de verificação
 ---
 
 **Data de Implementação:** 2025-12-16
-**Versão:** 1.0.0
+**Última Atualização:** 2025-12-17 (Configuração de timeout personalizado)
+**Versão:** 1.1.0
 **Status:** ✅ Produção
