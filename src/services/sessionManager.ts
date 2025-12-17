@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from './supabaseClient';
 
 interface SessionConfig {
   maxIdleTime: number; // Tempo máximo de inatividade em ms (padrão: 3 minutos)
