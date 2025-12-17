@@ -21,7 +21,7 @@
         "arch": ["x64", "ia32"]
       }
     ],
-    "icon": "public/icon.png",
+    "icon": "public/icon-512x512.png",
     "publisherName": "Zaty Gráfica, SU, LDA",
     "artifactName": "${productName}-Setup-${version}.${ext}"
   },
@@ -31,10 +31,10 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Zaty Gráfica",
-    "installerIcon": "public/icon.png",
-    "uninstallerIcon": "public/icon.png",
-    "installerHeader": "public/icon.png",
-    "installerHeaderIcon": "public/icon.png",
+    "installerIcon": "public/icon-512x512.png",
+    "uninstallerIcon": "public/icon-512x512.png",
+    "installerHeader": "public/icon-512x512.png",
+    "installerHeaderIcon": "public/icon-512x512.png",
     "deleteAppDataOnUninstall": false,
     "menuCategory": true,
     "runAfterFinish": true,
@@ -42,7 +42,7 @@
   },
   "mac": {
     "target": ["dmg", "zip"],
-    "icon": "public/icon.png",
+    "icon": "public/icon-512x512.png",
     "category": "public.app-category.business",
     "hardenedRuntime": true,
     "gatekeeperAssess": false,
@@ -51,7 +51,7 @@
   },
   "linux": {
     "target": ["AppImage", "deb"],
-    "icon": "public/icon.png",
+    "icon": "public/icon-512x512.png",
     "category": "Office",
     "artifactName": "${productName}-${version}.${ext}"
   },
