@@ -4,7 +4,6 @@ import { supabase } from '../services/supabaseClient';
 import { convertKeysToCamelCase } from '../utils/case';
 import { useStore } from './useStore';
 import { env } from '../config/env';
-import { cacheService } from '../services/cacheService';
 
 type UserInput = Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { id?: string };
 type UserOperationResult = { success: boolean; message: string; user?: User };
@@ -57,16 +56,9 @@ const mapApiUser = (apiUser: ApiUser): User => ({
   updatedAt: apiUser.updatedAt ? new Date(apiUser.updatedAt) : new Date(),
 });
 
-/**
- * Enhanced Edge Function caller with retry logic and better error handling
- */
-const callManageUsers = async <T>(
-  action: ManageUsersAction,
-  payload?: Record<string, unknown>,
-  retryCount = 0
-): Promise<T> => {
+const callManageUsers = async <T>(action: ManageUsersAction, payload?: Record<string, unknown>, retryCount = 0): Promise<T> => {
   if (!functionsBaseUrl) {
-    console.error('[UserStore] Supabase URL not configured');
+    console.error('[UserStore] Supabase URL is not configured. Check VITE_SUPABASE_URL in .env.local');
     throw new Error('Supabase URL is not configured');
   }
 
@@ -77,10 +69,7 @@ const callManageUsers = async <T>(
   }
 
   try {
-    console.log(`[UserStore] Calling manage-users: ${action} (attempt ${retryCount + 1})`);
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    console.log(`[UserStore] Calling manage-users function: ${action}`, payload ? '(with payload)' : '');
 
     const response = await fetch(functionsBaseUrl, {
       method: 'POST',
@@ -89,60 +78,58 @@ const callManageUsers = async <T>(
         Authorization: `Bearer ${sessionData.session.access_token}`,
       },
       body: JSON.stringify({ action, payload }),
-      signal: controller.signal,
     });
 
-    clearTimeout(timeout);
-
     const parsed = (await response.json().catch((err) => {
-      console.error('[UserStore] Failed to parse JSON:', err);
+      console.error('[UserStore] Failed to parse JSON response:', err);
       return {};
     })) as { data?: T; error?: string };
 
     if (response.status === 401) {
+      console.error('[UserStore] Unauthorized (401) - Token may be expired or invalid');
       throw new Error('unauthorized');
     }
     if (response.status === 403) {
+      console.error('[UserStore] Forbidden (403) - User lacks admin permissions');
       throw new Error('forbidden');
     }
     if (response.status === 404) {
+      console.error('[UserStore] Edge Function not found (404) - Check if manage-users is deployed');
       throw new Error('Edge Function not deployed or URL misconfigured');
     }
-
-    // Retry on server errors
-    if (response.status >= 500 && retryCount < 3) {
-      const delay = Math.min(1000 * Math.pow(2, retryCount), 8000); // Max 8s
-      console.log(`[UserStore] Server error, retrying in ${delay}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return callManageUsers<T>(action, payload, retryCount + 1);
+    if (response.status >= 500) {
+      console.error('[UserStore] Server error:', response.status, parsed.error);
+      // Retry on server errors with exponential backoff
+      if (retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+        console.log(`[UserStore] Retrying in ${delay}ms... (attempt ${retryCount + 1}/3)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return callManageUsers<T>(action, payload, retryCount + 1);
+      }
+      throw new Error(parsed.error || `Server error (${response.status})`);
     }
-
     if (!response.ok || parsed.error) {
-      throw new Error(parsed.error || `Request failed (${response.status})`);
+      console.error('[UserStore] Request failed:', response.status, parsed.error);
+      throw new Error(parsed.error || 'User function failed');
     }
 
+    console.log(`[UserStore] Successfully completed action: ${action}`);
     return parsed.data as T;
   } catch (error) {
-    // Handle timeout
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.error('[UserStore] Request timeout');
-      if (retryCount < 2) {
-        return callManageUsers<T>(action, payload, retryCount + 1);
-      }
-      throw new Error('Request timeout');
-    }
-
-    // Handle network errors
+    // Handle network errors (fetch failures)
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      console.error('[UserStore] Network error');
+      console.error('[UserStore] Network error - Failed to connect to Edge Function:', error.message);
+      console.error('[UserStore] Check: 1) Internet connection, 2) CORS settings, 3) Edge Function deployment');
+
+      // Retry on network errors
       if (retryCount < 2) {
-        const delay = 1000 * Math.pow(2, retryCount);
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        const delay = Math.pow(2, retryCount) * 1000;
+        console.log(`[UserStore] Retrying network request in ${delay}ms... (attempt ${retryCount + 1}/2)`);
+        await new Promise(resolve => setTimeout(resolve, delay));
         return callManageUsers<T>(action, payload, retryCount + 1);
       }
-      throw new Error('Network error - check connection');
+      throw new Error('Failed to fetch - Network error or CORS issue');
     }
-
     throw error;
   }
 };
@@ -169,7 +156,6 @@ interface UserState {
   loading: boolean;
   hasLoaded: boolean;
   error: string | null;
-  lastFetchTime: number | null;
   listUsers: (force?: boolean) => Promise<User[]>;
   listUsersForChat: () => Promise<User[]>;
   getUserById: (id: string) => User | undefined;
@@ -178,7 +164,6 @@ interface UserState {
   toggleUserBlock: (id: string) => Promise<User | undefined>;
   deleteUserById: (id: string) => Promise<void>;
   subscribeToRealtime: () => () => void;
-  preloadUsers: () => Promise<void>;
 }
 
 export const useUserStore = create<UserState>((set, get) => ({
@@ -186,128 +171,69 @@ export const useUserStore = create<UserState>((set, get) => ({
   loading: false,
   hasLoaded: false,
   error: null,
-  lastFetchTime: null,
 
-  /**
-   * Enhanced listUsers with offline cache and smart refresh
-   */
   listUsers: async (force = false) => {
     const state = get();
 
-    // Prevent duplicate requests
+    // Don't fetch if already loading
     if (state.loading) {
-      console.log('[UserStore] Already loading, skipping');
+      console.log('[UserStore] Already loading users, skipping duplicate request');
       return state.users;
     }
 
-    // Return cached if fresh (< 5 minutes) and not forced
-    const now = Date.now();
-    const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-    if (
-      !force &&
-      state.hasLoaded &&
-      state.lastFetchTime &&
-      now - state.lastFetchTime < CACHE_DURATION
-    ) {
-      console.log('[UserStore] Returning fresh cached data');
+    // Don't fetch if already loaded (unless forced)
+    if (state.hasLoaded && !force) {
+      console.log('[UserStore] Users already loaded, returning cached data');
       return state.users;
     }
 
+    console.log(`[UserStore] Fetching users list (force: ${force})`);
     set({ loading: true, error: null });
 
     try {
-      // Try to load from IndexedDB cache first for instant display
-      if (!state.hasLoaded) {
-        const cachedUsers = await cacheService.getCachedUsers();
-        if (cachedUsers && cachedUsers.length > 0) {
-          const normalized = (cachedUsers as ApiUser[]).map((u) => normalizeUser(mapApiUser(u)));
-          set({ users: normalized, hasLoaded: true });
-          console.log('[UserStore] Loaded from IndexedDB cache');
-        }
-      }
-
-      // Fetch fresh data from server
-      console.log('[UserStore] Fetching fresh data from server');
       const apiUsers = await callManageUsers<ApiUser[]>('list');
       const normalized = apiUsers.map((u) => normalizeUser(mapApiUser(u)));
-
-      set({
-        users: normalized,
-        loading: false,
-        hasLoaded: true,
-        error: null,
-        lastFetchTime: now,
-      });
-
-      // Cache in IndexedDB for offline use
-      void cacheService.cacheUsers(apiUsers);
-
+      set({ users: normalized, loading: false, hasLoaded: true });
       console.log(`[UserStore] Successfully loaded ${normalized.length} users`);
       return normalized;
     } catch (error) {
       const message = (error as Error).message;
       console.error('[UserStore] Failed to load users:', message);
-
-      // If we have cached data, keep showing it
-      if (state.users.length > 0) {
-        console.log('[UserStore] Using stale cache due to error');
-        set({ loading: false, error: message });
-        return state.users;
-      }
-
-      // Otherwise try IndexedDB as fallback
-      const cachedUsers = await cacheService.getCachedUsers();
-      if (cachedUsers && cachedUsers.length > 0) {
-        const normalized = (cachedUsers as ApiUser[]).map((u) => normalizeUser(mapApiUser(u)));
-        console.log('[UserStore] Falling back to IndexedDB cache');
-        set({ users: normalized, loading: false, hasLoaded: true, error: message });
-        return normalized;
-      }
-
-      set({ loading: false, error: message });
+      set({ loading: false, hasLoaded: false, error: message });
       throw error;
     }
   },
 
-  /**
-   * Direct profile query for non-admin users (chat, etc.)
-   */
   listUsersForChat: async () => {
-    const state = get();
-
-    // Return cached if available and fresh
-    if (state.users.length > 0 && state.lastFetchTime) {
-      const age = Date.now() - state.lastFetchTime;
-      if (age < 5 * 60 * 1000) {
-        // 5 minutes
-        return state.users;
-      }
-    }
-
+    console.log('[UserStore] Fetching users for chat directly from profiles');
     set({ loading: true, error: null });
 
     try {
+      // Query profiles table directly (RLS policy allows authenticated users to see all profiles)
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, email, role, permissions, avatar_url, created_at, updated_at')
         .order('full_name', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[UserStore] Failed to fetch profiles for chat:', error);
+        set({ loading: false, error: error.message });
+        throw error;
+      }
 
       const normalized = (data || []).map((profile) => {
         const raw = convertKeysToCamelCase(profile as Record<string, unknown>);
-        return normalizeUser(mapProfileToUser(raw as ProfileRecord));
+        const user = mapProfileToUser(raw as ProfileRecord);
+        // Debug log to verify name mapping
+        if (!user.name || user.name === 'Unnamed User') {
+          console.warn('[UserStore] User with missing name:', { raw, user });
+        }
+        return normalizeUser(user);
       });
 
-      set({
-        users: normalized,
-        loading: false,
-        hasLoaded: true,
-        error: null,
-        lastFetchTime: Date.now(),
-      });
-
+      set({ users: normalized, loading: false, hasLoaded: true });
       console.log(`[UserStore] Successfully loaded ${normalized.length} users for chat`);
+      console.log('[UserStore] Sample user:', normalized[0]);
       return normalized;
     } catch (error) {
       const message = (error as Error).message;
@@ -345,12 +271,7 @@ export const useUserStore = create<UserState>((set, get) => ({
       });
 
       const normalized = normalizeUser(mapApiUser(apiUser));
-      set((state) => ({
-        users: [...state.users, normalized],
-        error: null,
-        lastFetchTime: Date.now(),
-      }));
-
+      set({ users: [...users, normalized], error: null });
       useStore.getState().addAuditLog({ action: 'create', resourceType: 'User', resourceId: normalized.id });
       return { success: true, message: 'user_created_success', user: normalized };
     } catch (error) {
@@ -380,21 +301,17 @@ export const useUserStore = create<UserState>((set, get) => ({
     const action = userData.password ? 'change_password' : 'update';
 
     try {
-      const apiUser = await callManageUsers<ApiUser>('update', { id, ...userData });
+      const apiUser = await callManageUsers<ApiUser>('update', {
+        id,
+        ...userData,
+      });
       const normalized = normalizeUser(mapApiUser(apiUser));
-
       set((state) => ({
         users: state.users.map((user) => (user.id === id ? normalized : user)),
         error: null,
-        lastFetchTime: Date.now(),
       }));
-
       useStore.getState().addAuditLog({ action, resourceType: 'User', resourceId: id });
-      return {
-        success: true,
-        message: userData.password ? 'password_changed_success' : 'user_updated_success',
-        user: normalized,
-      };
+      return { success: true, message: userData.password ? 'password_changed_success' : 'user_updated_success', user: normalized };
     } catch (error) {
       const message = (error as Error).message;
       set({ error: message });
@@ -408,20 +325,15 @@ export const useUserStore = create<UserState>((set, get) => ({
   toggleUserBlock: async (id) => {
     const user = get().users.find((u) => u.id === id);
     if (!user) return undefined;
-
     const payload = { isBlocked: !user.isBlocked, updatedAt: new Date() };
-
     try {
       const apiUser = await callManageUsers<ApiUser>('update', { id, ...payload });
       const normalized = normalizeUser(mapApiUser(apiUser));
       const action = user.isBlocked ? 'unblock' : 'block';
-
       set((state) => ({
         users: state.users.map((u) => (u.id === id ? normalized : u)),
         error: null,
-        lastFetchTime: Date.now(),
       }));
-
       useStore.getState().addAuditLog({ action, resourceType: 'User', resourceId: id });
       return normalized;
     } catch (error) {
@@ -437,7 +349,6 @@ export const useUserStore = create<UserState>((set, get) => ({
       set((state) => ({
         users: state.users.filter((user) => user.id !== id),
         error: null,
-        lastFetchTime: Date.now(),
       }));
       useStore.getState().addAuditLog({ action: 'delete', resourceType: 'User', resourceId: id });
     } catch (error) {
@@ -457,7 +368,6 @@ export const useUserStore = create<UserState>((set, get) => ({
         const raw = (payload.new ?? payload.old) as Record<string, unknown>;
         const parsed = convertKeysToCamelCase(raw) as ProfileRecord;
         if (!parsed?.id) return;
-
         const normalized = normalizeUser(mapProfileToUser(parsed));
 
         set((state) => {
@@ -465,16 +375,13 @@ export const useUserStore = create<UserState>((set, get) => ({
             return {
               users: state.users.filter((u) => u.id !== normalized.id),
               hasLoaded: true,
-              lastFetchTime: Date.now(),
             };
           }
-
           const exists = state.users.some((u) => u.id === normalized.id);
           const users = exists
             ? state.users.map((u) => (u.id === normalized.id ? normalized : u))
             : [normalized, ...state.users];
-
-          return { users, hasLoaded: true, lastFetchTime: Date.now() };
+          return { users, hasLoaded: true };
         });
       }
     );
@@ -485,31 +392,14 @@ export const useUserStore = create<UserState>((set, get) => ({
       void channel.unsubscribe();
     };
   },
-
-  /**
-   * Preload users in background without blocking UI
-   */
-  preloadUsers: async () => {
-    const state = get();
-    if (state.loading || state.hasLoaded) return;
-
-    // Load from cache first
-    const cachedUsers = await cacheService.getCachedUsers();
-    if (cachedUsers && cachedUsers.length > 0) {
-      const normalized = (cachedUsers as ApiUser[]).map((u) => normalizeUser(mapApiUser(u)));
-      set({ users: normalized, hasLoaded: true });
-    }
-
-    // Then fetch fresh data in background
-    void get().listUsers(true).catch(() => {
-      // Silent fail for preload
-    });
-  },
 }));
 
-// Bootstrap realtime subscription
+// Bootstrap: ensure realtime is attached once on app start
+// Note: listUsers is NOT called automatically because it uses an admin-only Edge Function
+// Modules that need users should call listUsers() (for admin) or listUsersForChat() (for all users)
 let userRealtimeUnsubscribe: (() => void) | null = null;
 const bootstrapUsers = () => {
+  // Attach realtime only once
   if (!userRealtimeUnsubscribe) {
     userRealtimeUnsubscribe = useUserStore.getState().subscribeToRealtime();
   }

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useUserStore } from '../../store/useUserStore';
 import { useStore } from '../../store/useStore';
@@ -23,7 +23,7 @@ const UsersModule: React.FC = () => {
   const { t } = useTranslation();
   const { users, listUsers, toggleUserBlock, loading, hasLoaded, error: loadError, subscribeToRealtime } = useUserStore();
   const { currentUser, startImpersonation, addNotification } = useStore();
-
+  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isBlockConfirmOpen, setIsBlockConfirmOpen] = useState(false);
   const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
@@ -31,13 +31,12 @@ const UsersModule: React.FC = () => {
   const [isTransferConfirmOpen, setIsTransferConfirmOpen] = useState(false);
   const [isTransferProgressOpen, setIsTransferProgressOpen] = useState(false);
   const [avatarCache, setAvatarCache] = useState<Record<string, string>>({});
-  const visibleUsersRef = useRef<Set<string>>(new Set());
-
+  
   const [selectedUserForEdit, setSelectedUserForEdit] = useState<User | null>(null);
   const [userToProcess, setUserToProcess] = useState<User | null>(null);
 
-  // Load users once on mount
   useEffect(() => {
+    // Only load if not already loaded or loading
     if (!hasLoaded && !loading) {
       listUsers().catch((error) => {
         console.error('[UsersModule] Failed to load users:', error);
@@ -45,95 +44,58 @@ const UsersModule: React.FC = () => {
     }
     const unsubscribe = subscribeToRealtime();
     return () => unsubscribe();
-  }, []);
+  }, []); // Empty deps - only run once on mount
 
-  /**
-   * Optimized avatar loading with intelligent preloading
-   * - Loads visible avatars with high priority
-   * - Preloads remaining avatars in background
-   * - Uses cached blob URLs for instant offline display
-   */
+  // Optimize avatar loading - only load when users change, not on every render
   useEffect(() => {
     if (users.length === 0) return;
 
-    const loadAvatarsOptimized = async () => {
-      const usersWithPhotos = users.filter((u) => u.photoUrl);
-      if (usersWithPhotos.length === 0) return;
+    const loadAvatars = async () => {
+      // Filter users that need avatar URLs and aren't already cached
+      const usersNeedingAvatars = users.filter((u) => u.photoUrl && !avatarCache[u.id]);
 
-      console.log(`[UsersModule] Optimizing avatar loading for ${usersWithPhotos.length} users...`);
+      if (usersNeedingAvatars.length === 0) return;
 
-      // Step 1: Instantly populate from cache (synchronous)
-      const cachedEntries: Record<string, string> = {};
-      usersWithPhotos.forEach((u) => {
-        if (!avatarCache[u.id]) {
-          const cached = storageService.getCachedSignedUrl(u.photoUrl!, 'profile_photos');
-          if (cached) {
-            cachedEntries[u.id] = cached;
-          }
+      console.log(`[UsersModule] Loading ${usersNeedingAvatars.length} avatar URLs...`);
+
+      // First, quickly populate with any cached URLs
+      const cachedEntries: [string, string][] = [];
+      usersNeedingAvatars.forEach((u) => {
+        const cached = storageService.getCachedSignedUrl(u.photoUrl!, 'profile_photos');
+        if (cached) {
+          cachedEntries.push([u.id, cached]);
         }
       });
 
-      if (Object.keys(cachedEntries).length > 0) {
-        setAvatarCache((prev) => ({ ...prev, ...cachedEntries }));
-        console.log(`[UsersModule] Instantly loaded ${Object.keys(cachedEntries).length} avatars from cache`);
+      if (cachedEntries.length > 0) {
+        setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(cachedEntries) }));
       }
 
-      // Step 2: Determine visible users (first 10 in list = high priority)
-      const visibleCount = 10;
-      const visibleUserIds = usersWithPhotos.slice(0, visibleCount).map((u) => u.id);
-      visibleUsersRef.current = new Set(visibleUserIds);
-
-      // Step 3: Preload all user avatars with intelligent priority
-      // This will load visible avatars first, then others in background
-      void storageService.preloadUserAvatars(
-        usersWithPhotos.map((u) => ({ id: u.id, photoUrl: u.photoUrl })),
-        visibleUserIds
-      );
-
-      // Step 4: Load visible avatars immediately (high priority)
-      const visibleUsers = usersWithPhotos.filter((u) => visibleUserIds.includes(u.id) && !cachedEntries[u.id]);
-      if (visibleUsers.length > 0) {
-        const visibleEntries = await Promise.all(
-          visibleUsers.map(async (u) => {
+      // Then load fresh signed URLs in batches (limit concurrent requests)
+      const batchSize = 5;
+      for (let i = 0; i < usersNeedingAvatars.length; i += batchSize) {
+        const batch = usersNeedingAvatars.slice(i, i + batchSize);
+        const entries = await Promise.all(
+          batch.map(async (u) => {
             try {
-              const url = await storageService.getSignedUrlCached(u.photoUrl!, 3600, 'profile_photos');
+              const url = await storageService.getSignedUrlCached(u.photoUrl!, 900, 'profile_photos');
               return [u.id, url] as const;
             } catch (e) {
-              console.warn('[UsersModule] Avatar load fail for user', u.id, e);
+              console.warn('[UsersModule] Avatar signed URL fail for user', u.id, e);
               return null;
             }
           })
         );
 
-        const mapped = visibleEntries.filter((e): e is [string, string] => Boolean(e));
+        const mapped = entries.filter((e): e is [string, string] => Boolean(e));
         if (mapped.length > 0) {
           setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(mapped) }));
-          console.log(`[UsersModule] Loaded ${mapped.length} visible avatars`);
         }
       }
-
-      // Step 5: Background loading will happen automatically via preload queue
-      // No need to manually load remaining avatars - storageService handles it
     };
 
-    void loadAvatarsOptimized();
-  }, [users.length]);
-
-  /**
-   * Update visible users when scrolling (for future intersection observer implementation)
-   */
-  const updateVisibleUsers = useCallback((userIds: string[]) => {
-    visibleUsersRef.current = new Set(userIds);
-
-    // Trigger high-priority preload for newly visible avatars
-    const usersWithPhotos = users.filter((u) => u.photoUrl && userIds.includes(u.id));
-    if (usersWithPhotos.length > 0) {
-      void storageService.preloadUserAvatars(
-        usersWithPhotos.map((u) => ({ id: u.id, photoUrl: u.photoUrl })),
-        userIds
-      );
-    }
-  }, [users]);
+    void loadAvatars();
+  }, [users.length]); // Only re-run when number of users changes
 
   const isAdmin = currentUser?.role === 'admin';
   const isMobile = useMediaQuery('(max-width: 767px)');
@@ -353,3 +315,6 @@ const UsersModule: React.FC = () => {
 };
 
 export default UsersModule;
+
+
+
