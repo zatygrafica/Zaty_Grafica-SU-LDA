@@ -49,13 +49,17 @@ interface AuthState {
   loading: boolean;
   initialized: boolean;
   error: string | null;
+  isLocked: boolean; // Bloqueado por inatividade
+  lockReason: 'idle' | 'session_expired' | null;
 }
 
 interface AuthActions {
-  signIn(email: string, password: string): Promise<void>;
+  signIn(email: string, password: string): Promise<{ success: boolean; error?: string }>;
   signUp(email: string, password: string, profile?: Partial<Profile>): Promise<void>;
   signOut(): Promise<void>;
   refreshProfile(): Promise<void>;
+  lockSession(reason: 'idle' | 'session_expired'): void;
+  unlockSession(): void;
 }
 
 let authListenerSet = false;
@@ -107,6 +111,8 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
     loading: true,
     initialized: false,
     error: null,
+    isLocked: false,
+    lockReason: null,
 
     async signIn(email, password) {
       set({ loading: true, error: null });
@@ -114,7 +120,7 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
         // Clean up old storage before login to prevent quota errors
         cleanupStorage();
 
-        const { data } = await authService.signIn({ email, password });
+        await authService.signIn({ email, password });
         console.log('[Auth] Sign in completed, waiting for session to be saved...');
 
         // Wait for session to be fully saved and token to be set in headers
@@ -136,9 +142,12 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
           profile,
           loading: false,
           initialized: true,
+          isLocked: false,
+          lockReason: null,
         });
 
         console.log('[Auth] Login successful for:', session.user?.email);
+        return { success: true };
       } catch (error) {
         // Log the actual error for debugging
         console.error('[Auth] Login error:', error);
@@ -154,11 +163,12 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
             initialized: true,
             error: 'Armazenamento do navegador cheio ou bloqueado. Limpe os dados do site e tente novamente.',
           });
-          return;
+          return { success: false, error: 'Armazenamento do navegador cheio ou bloqueado. Limpe os dados do site e tente novamente.' };
         }
 
-        set({ loading: false, initialized: true, error: (error as Error).message });
-        throw error;
+        const errorMessage = (error as Error).message;
+        set({ loading: false, initialized: true, error: errorMessage });
+        return { success: false, error: errorMessage };
       }
     },
 
@@ -187,6 +197,16 @@ export const useAuthStore = create<AuthState & AuthActions>((set, get) => {
       if (!user) return;
       const profile = await ensureProfileForUser(user);
       set({ profile });
+    },
+
+    lockSession(reason) {
+      console.log('[Auth] Locking session:', reason);
+      set({ isLocked: true, lockReason: reason });
+    },
+
+    unlockSession() {
+      console.log('[Auth] Unlocking session');
+      set({ isLocked: false, lockReason: null });
     },
   };
 });

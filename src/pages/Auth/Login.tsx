@@ -28,12 +28,11 @@ const LoginPage: React.FC = () => {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    try {
-      await signIn(email, password);
+    const result = await signIn(email, password);
+    if (result.success) {
       navigate(redirectTo, { replace: true });
-    } catch {
-      // errors are handled in the store state
     }
+    // errors are handled in the store state
   };
 
   const openLegalDocument = (doc: 'privacy' | 'terms') => {

@@ -10,6 +10,7 @@ import InitialLoadingScreen from './components/Layout/InitialLoadingScreen';
 import LoadingErrorScreen from './components/Layout/LoadingErrorScreen';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { useUserStore } from './store/useUserStore';
+import SecurityWrapper from './components/Security/SecurityWrapper';
 
 function App() {
   const { 
@@ -103,21 +104,23 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent">
-      <Layout canInstallPWA={canInstall} onInstallPWA={promptInstall} />
-      {needRefresh && (
-        <PwaUpdateNotification
-          onUpdate={handlePwaUpdate}
-          onClose={() => setNeedRefresh(false)}
-        />
-      )}
-      {showPendingServicesPopup && (
-        <PendingServicesPopup 
-          onClose={() => setShowPendingServicesPopup(false)}
-          onDisable={disablePendingServicesPopup}
-        />
-      )}
-    </div>
+    <SecurityWrapper enabled={true} idleTimeout={3 * 60 * 1000}>
+      <div className="min-h-screen bg-transparent">
+        <Layout canInstallPWA={canInstall} onInstallPWA={promptInstall} />
+        {needRefresh && (
+          <PwaUpdateNotification
+            onUpdate={handlePwaUpdate}
+            onClose={() => setNeedRefresh(false)}
+          />
+        )}
+        {showPendingServicesPopup && (
+          <PendingServicesPopup
+            onClose={() => setShowPendingServicesPopup(false)}
+            onDisable={disablePendingServicesPopup}
+          />
+        )}
+      </div>
+    </SecurityWrapper>
   );
 }
 
