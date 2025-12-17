@@ -17,6 +17,33 @@ export const authService = {
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+
+    // SECURITY: Limpar completamente o storage para prevenir acesso não autorizado
+    try {
+      // Remove dados de sessão do Supabase
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+
+      // Limpa dados específicos da aplicação que possam conter informações sensíveis
+      const keysToRemove = [
+        'security_idle_timeout', // Mantém configuração de timeout
+      ];
+
+      // Remove todas as chaves EXCETO as configurações do usuário
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && !keysToRemove.includes(key) && !key.startsWith('settings_')) {
+          // Não remove configurações gerais e timeout
+          if (!key.includes('theme') && !key.includes('language')) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+
+      console.log('[AuthService] Storage cleaned on logout');
+    } catch (error) {
+      console.error('[AuthService] Error cleaning storage:', error);
+    }
   },
 
   async getSession(): Promise<Session | null> {

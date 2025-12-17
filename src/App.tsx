@@ -11,6 +11,7 @@ import LoadingErrorScreen from './components/Layout/LoadingErrorScreen';
 import { usePWAInstall } from './hooks/usePWAInstall';
 import { useUserStore } from './store/useUserStore';
 import SecurityWrapper from './components/Security/SecurityWrapper';
+import { useAuthStore } from './store/useAuthStore';
 
 function App() {
   const {
@@ -27,6 +28,38 @@ function App() {
   const { orders } = useOrderStore();
   const { canInstall, promptInstall } = usePWAInstall();
   const { users } = useUserStore();
+  const { signOut } = useAuthStore();
+
+  // --- Security: Logout automático ao fechar aplicativo/aba ---
+  useEffect(() => {
+    const handleBeforeUnload = async () => {
+      // Faz logout silencioso ao fechar
+      try {
+        await signOut();
+        console.log('[Security] Session cleared on window close');
+      } catch (error) {
+        console.error('[Security] Error during logout on close:', error);
+      }
+    };
+
+    const handleUnload = async () => {
+      // Fallback para garantir logout
+      try {
+        await signOut();
+      } catch (error) {
+        console.error('[Security] Error during logout on unload:', error);
+      }
+    };
+
+    // Listeners para fechar janela/aba
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+    };
+  }, [signOut]);
 
   // --- Security: Idle Timeout State ---
   const [idleTimeout, setIdleTimeout] = useState<number>(() => {

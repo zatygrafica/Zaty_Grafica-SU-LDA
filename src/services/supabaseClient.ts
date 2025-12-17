@@ -6,12 +6,12 @@ if (!env.supabase.url || !env.supabase.anonKey) {
   throw new Error('Supabase env vars are missing');
 }
 
-// Deixe o supabase-js gerenciar o token da sessão do usuário.
-// Só passamos a anon key; o Authorization será o access_token da sessão.
+// SECURITY: Sessão NÃO é persistida para forçar reautenticação a cada acesso
+// Isso previne acesso não autorizado após fechar o aplicativo
 export const supabase = createClient(env.supabase.url, env.supabase.anonKey, {
   auth: {
     storage: createResilientStorage(),
     autoRefreshToken: true,
-    persistSession: true,
+    persistSession: false, // IMPORTANTE: Não persistir sessão para segurança
   },
 });

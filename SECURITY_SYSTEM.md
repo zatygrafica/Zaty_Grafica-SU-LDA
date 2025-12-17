@@ -10,6 +10,10 @@ Sistema completo de segurança implementado para proteger o acesso ao sistema co
 - ✅ Todo acesso ao sistema requer autenticação válida via Supabase
 - ✅ Nenhum login automático
 - ✅ Sessão é validada em cada inicialização
+- ✅ **Sessão NÃO é persistida** (`persistSession: false`)
+- ✅ **Logout automático ao fechar** aplicativo/aba
+- ✅ **Limpeza completa de storage** ao fazer logout
+- ✅ Senhas NUNCA são armazenadas localmente
 
 ### 2. Bloqueio por Inatividade
 - ✅ Detecção automática de inatividade após **3 minutos**
@@ -131,8 +135,18 @@ checkInterval: 30 * 1000            // Intervalo de verificação
 ### O que está protegido:
 - ✅ Bloqueio automático por inatividade
 - ✅ Validação real via Supabase
-- ✅ Tokens renovados automaticamente
+- ✅ Tokens renovados automaticamente (apenas durante sessão ativa)
 - ✅ UI completamente bloqueada durante reauth
+- ✅ **Sessão não persiste entre fechamentos do aplicativo**
+- ✅ **Logout automático ao fechar janela/aba**
+- ✅ **Storage limpo completamente ao fazer logout**
+- ✅ **Senhas nunca armazenadas no cliente**
+
+### Proteção contra:
+- 🔒 Acesso não autorizado após fechar aplicativo
+- 🔒 Reutilização de sessões antigas
+- 🔒 Vazamento de credenciais via storage
+- 🔒 Sessões abandonadas ativas
 
 ### Limitações (Frontend):
 - ⚠️ Validações de permissão devem ser no backend (RLS)
@@ -157,9 +171,42 @@ checkInterval: 30 * 1000            // Intervalo de verificação
 - [ ] Dashboard de sessões ativas
 - [ ] Histórico de bloqueios
 
+## 🔐 Medidas de Segurança Adicionais
+
+### Configuração do Supabase Client
+```typescript
+// src/services/supabaseClient.ts
+export const supabase = createClient(url, key, {
+  auth: {
+    storage: createResilientStorage(),
+    autoRefreshToken: true,
+    persistSession: false, // ⚠️ CRÍTICO: Não persiste sessão
+  },
+});
+```
+
+### Logout Automático
+- Evento `beforeunload`: Limpa sessão ao fechar janela
+- Evento `unload`: Fallback para garantir limpeza
+- Limpeza de localStorage e sessionStorage
+- Remoção de tokens e dados sensíveis
+
+### Dados Preservados
+Apenas configurações não-sensíveis são mantidas:
+- ✅ Tema (light/dark)
+- ✅ Idioma (pt/en)
+- ✅ Timeout de segurança configurado
+- ❌ Tokens de autenticação
+- ❌ Dados de sessão
+- ❌ Informações do usuário
+
 ---
 
 **Data de Implementação:** 2025-12-16
-**Última Atualização:** 2025-12-17 (Configuração de timeout personalizado)
-**Versão:** 1.1.0
-**Status:** ✅ Produção
+**Última Atualização:** 2025-12-17
+- Configuração de timeout personalizado
+- **Correção crítica: Sessão não persistente**
+- **Logout automático ao fechar**
+
+**Versão:** 1.2.0
+**Status:** ✅ Produção (Segurança Aprimorada)
