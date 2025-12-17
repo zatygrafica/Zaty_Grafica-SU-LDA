@@ -163,32 +163,6 @@ const AboutSettings: React.FC = () => {
         </div>
       </div>
 
-      {/* Tecnologias */}
-      <div className="bg-white dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-800 p-6">
-        <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-          Tecnologias Utilizadas
-        </h4>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div>
-            <span className="text-gray-600 dark:text-gray-400">Frontend:</span>
-            <span className="ml-2 text-gray-900 dark:text-white font-medium">React + TypeScript</span>
-          </div>
-          <div>
-            <span className="text-gray-600 dark:text-gray-400">Backend:</span>
-            <span className="ml-2 text-gray-900 dark:text-white font-medium">Supabase</span>
-          </div>
-          <div>
-            <span className="text-gray-600 dark:text-gray-400">UI:</span>
-            <span className="ml-2 text-gray-900 dark:text-white font-medium">Tailwind CSS</span>
-          </div>
-          {isElectron && (
-            <div>
-              <span className="text-gray-600 dark:text-gray-400">Desktop:</span>
-              <span className="ml-2 text-gray-900 dark:text-white font-medium">Electron</span>
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 };
