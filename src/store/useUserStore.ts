@@ -80,7 +80,9 @@ const callManageUsers = async <T>(
     console.log(`[UserStore] Calling manage-users: ${action} (attempt ${retryCount + 1})`);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000); // 30s timeout
+    // Shorter timeout on first attempt, longer on retries
+    const timeoutMs = retryCount === 0 ? 15000 : 25000; // 15s first, 25s on retry
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
     const response = await fetch(functionsBaseUrl, {
       method: 'POST',
@@ -109,10 +111,10 @@ const callManageUsers = async <T>(
       throw new Error('Edge Function not deployed or URL misconfigured');
     }
 
-    // Retry on server errors
+    // Retry on server errors (500, 502, 503, 504)
     if (response.status >= 500 && retryCount < 3) {
-      const delay = Math.min(1000 * Math.pow(2, retryCount), 8000); // Max 8s
-      console.log(`[UserStore] Server error, retrying in ${delay}ms...`);
+      const delay = Math.min(1000 * Math.pow(2, retryCount), 5000); // Faster retry: max 5s
+      console.log(`[UserStore] Server error ${response.status}, retrying in ${delay}ms...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
       return callManageUsers<T>(action, payload, retryCount + 1);
     }
@@ -248,10 +250,22 @@ export const useUserStore = create<UserState>((set, get) => ({
       const message = (error as Error).message;
       console.error('[UserStore] Failed to load users:', message);
 
-      // If we have cached data, keep showing it
+      // If we have cached data in state, keep showing it WITHOUT error message
       if (state.users.length > 0) {
-        console.log('[UserStore] Using stale cache due to error');
-        set({ loading: false, error: message });
+        console.log('[UserStore] Using stale in-memory cache (silent fallback)');
+        set({ loading: false, error: null }); // Don't show error if we have data
+
+        // Retry in background after 10 seconds
+        setTimeout(() => {
+          const currentState = get();
+          if (!currentState.loading) {
+            console.log('[UserStore] Background retry after error');
+            void get().listUsers(true).catch(() => {
+              // Silent fail - user already has cached data
+            });
+          }
+        }, 10000);
+
         return state.users;
       }
 
@@ -259,11 +273,24 @@ export const useUserStore = create<UserState>((set, get) => ({
       const cachedUsers = await cacheService.getCachedUsers();
       if (cachedUsers && cachedUsers.length > 0) {
         const normalized = (cachedUsers as ApiUser[]).map((u) => normalizeUser(mapApiUser(u)));
-        console.log('[UserStore] Falling back to IndexedDB cache');
-        set({ users: normalized, loading: false, hasLoaded: true, error: message });
+        console.log('[UserStore] Falling back to IndexedDB cache (silent fallback)');
+        set({ users: normalized, loading: false, hasLoaded: true, error: null }); // Don't show error
+
+        // Retry in background after 10 seconds
+        setTimeout(() => {
+          const currentState = get();
+          if (!currentState.loading) {
+            console.log('[UserStore] Background retry after error');
+            void get().listUsers(true).catch(() => {
+              // Silent fail - user already has cached data
+            });
+          }
+        }, 10000);
+
         return normalized;
       }
 
+      // Only show error if we have no cached data at all
       set({ loading: false, error: message });
       throw error;
     }
