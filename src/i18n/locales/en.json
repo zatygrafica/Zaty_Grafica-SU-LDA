@@ -560,7 +560,11 @@
     "security": "Security",
     "my_profile": "My Profile",
     "keyboard_shortcuts": "Keyboard Shortcuts",
-    "keyboard_shortcuts_desc": "Use these key combinations to quickly navigate between modules."
+    "keyboard_shortcuts_desc": "Use these key combinations to quickly navigate between modules.",
+    "backup_instructions_title": "Backup Instructions",
+    "backup_instructions_desc": "Regularly backup your data to prevent loss of important information. Export system data and store it in a safe location.",
+    "export_backup": "Export Backup",
+    "import_backup": "Import Backup"
   },
   "notifications": {
     "title": "Notifications",

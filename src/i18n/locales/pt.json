@@ -560,7 +560,11 @@
     "security": "Segurança",
     "my_profile": "Meu Perfil",
     "keyboard_shortcuts": "Atalhos de Teclado",
-    "keyboard_shortcuts_desc": "Use estas combinações de teclas para navegar rapidamente entre os módulos."
+    "keyboard_shortcuts_desc": "Use estas combinações de teclas para navegar rapidamente entre os módulos.",
+    "backup_instructions_title": "Instruções de Backup",
+    "backup_instructions_desc": "Faça backup regular dos seus dados para prevenir perda de informações importantes. Exporte os dados do sistema e armazene em local seguro.",
+    "export_backup": "Exportar Backup",
+    "import_backup": "Importar Backup"
   },
   "notifications": {
     "title": "Notificações",
