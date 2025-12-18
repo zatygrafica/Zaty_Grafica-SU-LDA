@@ -80,15 +80,15 @@ const SecurityWrapper: React.FC<SecurityWrapperProps> = ({
   const handleReauthSuccess = useCallback(() => {
     console.log('[Security] Reauth successful, unlocking session');
 
-    // Desbloqueia a sessão
+    // Desbloqueia a sessão IMEDIATAMENTE
     unlockSession();
     setShowReauthModal(false);
 
-    // Reinicia o timer de inatividade
-    resetIdleTimer();
-
-    // Reinicia o gerenciador de sessão
-    sessionManager.restart();
+    // Operações secundárias em background (não bloqueia a UI)
+    setTimeout(() => {
+      resetIdleTimer();
+      sessionManager.restart();
+    }, 0);
   }, [unlockSession, resetIdleTimer]);
 
   // Sincroniza estado de bloqueio com modal

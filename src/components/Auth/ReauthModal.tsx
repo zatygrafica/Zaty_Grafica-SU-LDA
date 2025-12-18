@@ -55,10 +55,11 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
       const result = await signIn(user.email, password);
 
       if (result.success) {
-        // Desbloqueio imediato: limpa o formulário e chama onSuccess sem delay
+        // Desbloqueio IMEDIATO: atualiza UI primeiro
         setPassword('');
         setIsLoading(false);
-        // Chamada imediata sem setTimeout para experiência instantânea
+
+        // Chama onSuccess de forma síncrona e imediata
         onSuccess();
       } else {
         setError(result.error || 'Senha incorreta');
@@ -88,7 +89,7 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
   const message = messages[reason];
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 p-6 text-white">
