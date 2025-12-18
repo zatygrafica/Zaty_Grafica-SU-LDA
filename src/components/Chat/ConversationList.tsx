@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useChatStore } from '../../store/useChatStore';
 import { useUserStore } from '../../store/useUserStore';
 import { useStore } from '../../store/useStore';
@@ -9,6 +9,7 @@ import { pt } from 'date-fns/locale';
 import { clsx } from 'clsx';
 import Input from '../Common/Input';
 import Button from '../Common/Button';
+import { storageService } from '../../services/storageService';
 
 interface ConversationListProps {
   selectedConversationId: string | null;
@@ -20,6 +21,59 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
   const { users } = useUserStore();
   const { conversations, messages, startOrGetConversation, soundEnabled, toggleSound, onlineUserIds } = useChatStore();
   const [searchTerm, setSearchTerm] = useState('');
+  const [avatarCache, setAvatarCache] = useState<Record<string, string>>({});
+
+  // Load avatars with intelligent preloading
+  useEffect(() => {
+    const usersWithPhotos = users.filter((u) => u.photoUrl);
+    if (usersWithPhotos.length === 0) return;
+
+    const loadAvatars = async () => {
+      // Step 1: Instantly populate from cache
+      const cachedEntries: Record<string, string> = {};
+      usersWithPhotos.forEach((u) => {
+        if (!avatarCache[u.id]) {
+          const cached = storageService.getCachedSignedUrl(u.photoUrl!, 'profile_photos');
+          if (cached) {
+            cachedEntries[u.id] = cached;
+          }
+        }
+      });
+
+      if (Object.keys(cachedEntries).length > 0) {
+        setAvatarCache((prev) => ({ ...prev, ...cachedEntries }));
+      }
+
+      // Step 2: Preload all avatars
+      void storageService.preloadUserAvatars(
+        usersWithPhotos.map((u) => ({ id: u.id, photoUrl: u.photoUrl })),
+        [] // No priority distinction for chat
+      );
+
+      // Step 3: Load fresh URLs for uncached
+      const uncached = usersWithPhotos.filter((u) => !cachedEntries[u.id]);
+      if (uncached.length > 0) {
+        const entries = await Promise.all(
+          uncached.map(async (u) => {
+            try {
+              const url = await storageService.getSignedUrlCached(u.photoUrl!, 3600, 'profile_photos');
+              return [u.id, url] as const;
+            } catch (e) {
+              console.warn('[ConversationList] Avatar load fail for user', u.id, e);
+              return null;
+            }
+          })
+        );
+
+        const mapped = entries.filter((e): e is [string, string] => Boolean(e));
+        if (mapped.length > 0) {
+          setAvatarCache((prev) => ({ ...prev, ...Object.fromEntries(mapped) }));
+        }
+      }
+    };
+
+    void loadAvatars();
+  }, [users.length]);
 
   const conversationDetails = useMemo(() => {
     console.log('[ConversationList] Building conversation details:', {
@@ -124,7 +178,11 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
             >
               <div className="relative">
                 {user.photoUrl ? (
-                  <img src={user.photoUrl} alt={user.name} className="w-10 h-10 rounded-full object-cover" />
+                  <img
+                    src={avatarCache[user.id] ?? user.photoUrl}
+                    alt={user.name}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
                     <UserIcon className="w-5 h-5 text-gray-500" />
@@ -158,7 +216,11 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
           >
             <div className="relative">
               {otherUser?.photoUrl ? (
-                <img src={otherUser.photoUrl} alt={otherUser.name} className="w-10 h-10 rounded-full object-cover" />
+                <img
+                  src={avatarCache[otherUser.id] ?? otherUser.photoUrl}
+                  alt={otherUser.name}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
                   <UserIcon className="w-5 h-5 text-gray-500" />

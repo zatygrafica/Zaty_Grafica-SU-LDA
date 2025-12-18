@@ -2,7 +2,7 @@
 // The module resolution is seeing the folder "./electron" before node_modules
 // Solution: require from the parent directory's node_modules explicitly
 
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeTheme } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -20,6 +20,9 @@ if (!isDev) {
 }
 
 function createWindow() {
+  // Define background color based on system theme
+  const backgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -32,9 +35,10 @@ function createWindow() {
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.cjs')
     },
-    backgroundColor: '#ffffff',
+    backgroundColor: backgroundColor,
     show: false, // Não mostrar até estar pronto (evita flash)
     autoHideMenuBar: true, // Esconder menu (File, Edit, etc)
+    titleBarStyle: 'default', // Usar barra de título nativa que segue o tema do sistema
   });
 
   // Carregar a aplicação
@@ -54,6 +58,14 @@ function createWindow() {
     // Checar atualizações apenas em produção
     if (!isDev) {
       checkForUpdates();
+    }
+  });
+
+  // Atualizar background quando tema do sistema mudar
+  nativeTheme.on('updated', () => {
+    const newBackgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
+    if (mainWindow) {
+      mainWindow.setBackgroundColor(newBackgroundColor);
     }
   });
 

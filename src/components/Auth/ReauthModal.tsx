@@ -55,14 +55,17 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
       const result = await signIn(user.email, password);
 
       if (result.success) {
+        // Desbloqueio imediato: limpa o formulário e chama onSuccess sem delay
         setPassword('');
+        setIsLoading(false);
+        // Chamada imediata sem setTimeout para experiência instantânea
         onSuccess();
       } else {
         setError(result.error || 'Senha incorreta');
+        setIsLoading(false);
       }
     } catch (err) {
       setError('Erro ao validar credenciais');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -111,10 +114,7 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
                 Usuário:
               </p>
               <p className="font-semibold text-gray-900 dark:text-white">
-                {profile?.full_name || user?.email}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                {user?.email}
+                {profile?.full_name || user?.email?.split('@')[0]}
               </p>
             </div>
 
