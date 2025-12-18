@@ -89,7 +89,19 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
   const message = messages[reason];
 
   return (
-    <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div
+      className="fixed z-[10001] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      style={{
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0,
+      }}
+    >
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 p-6 text-white">
