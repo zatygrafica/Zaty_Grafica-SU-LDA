@@ -20,6 +20,10 @@ if (!isDev) {
 }
 
 function createWindow() {
+  // Force Electron to respect system theme
+  // This ensures the native title bar follows the OS theme
+  nativeTheme.themeSource = 'system';
+
   // Define background color based on system theme
   const backgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
 
@@ -63,6 +67,9 @@ function createWindow() {
 
   // Atualizar background quando tema do sistema mudar
   nativeTheme.on('updated', () => {
+    // Force theme update to ensure title bar follows system theme
+    nativeTheme.themeSource = 'system';
+
     const newBackgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
     if (mainWindow) {
       mainWindow.setBackgroundColor(newBackgroundColor);
