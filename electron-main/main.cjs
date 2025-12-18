@@ -21,7 +21,6 @@ if (!isDev) {
 
 function createWindow() {
   // Force Electron to respect system theme
-  // This ensures the native title bar follows the OS theme
   nativeTheme.themeSource = 'system';
 
   // Define background color based on system theme
@@ -40,9 +39,20 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.cjs')
     },
     backgroundColor: backgroundColor,
-    show: false, // Não mostrar até estar pronto (evita flash)
-    autoHideMenuBar: true, // Esconder menu (File, Edit, etc)
-    titleBarStyle: 'default', // Usar barra de título nativa que segue o tema do sistema
+    show: false,
+    autoHideMenuBar: true,
+    // No Windows, usar frame customizado para controlar a cor do título
+    ...(process.platform === 'win32' ? {
+      frame: true,
+      titleBarStyle: 'default',
+      titleBarOverlay: {
+        color: nativeTheme.shouldUseDarkColors ? '#202020' : '#ffffff',
+        symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
+        height: 33
+      }
+    } : {
+      titleBarStyle: 'default'
+    })
   });
 
   // Carregar a aplicação
@@ -65,7 +75,7 @@ function createWindow() {
     }
   });
 
-  // Atualizar background quando tema do sistema mudar
+  // Atualizar background e barra de título quando tema do sistema mudar
   nativeTheme.on('updated', () => {
     // Force theme update to ensure title bar follows system theme
     nativeTheme.themeSource = 'system';
@@ -73,6 +83,15 @@ function createWindow() {
     const newBackgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
     if (mainWindow) {
       mainWindow.setBackgroundColor(newBackgroundColor);
+
+      // Atualizar cor da barra de título no Windows
+      if (process.platform === 'win32') {
+        mainWindow.setTitleBarOverlay({
+          color: nativeTheme.shouldUseDarkColors ? '#202020' : '#ffffff',
+          symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
+          height: 33
+        });
+      }
     }
   });
 
