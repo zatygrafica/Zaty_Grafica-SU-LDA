@@ -8,6 +8,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Verificar atualizações manualmente
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 
+  // Window controls (para barra de título customizada)
+  windowMinimize: () => ipcRenderer.send('window-minimize'),
+  windowMaximize: () => ipcRenderer.send('window-maximize'),
+  windowClose: () => ipcRenderer.send('window-close'),
+  windowIsMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+
   // Informações do ambiente
   platform: process.platform,
   isElectron: true,

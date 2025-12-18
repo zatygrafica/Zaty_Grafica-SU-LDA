@@ -41,18 +41,9 @@ function createWindow() {
     backgroundColor: backgroundColor,
     show: false,
     autoHideMenuBar: true,
-    // No Windows, usar frame customizado para controlar a cor do título
-    ...(process.platform === 'win32' ? {
-      frame: true,
-      titleBarStyle: 'default',
-      titleBarOverlay: {
-        color: nativeTheme.shouldUseDarkColors ? '#202020' : '#ffffff',
-        symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
-        height: 33
-      }
-    } : {
-      titleBarStyle: 'default'
-    })
+    // Remover barra de título nativa para usar customizada que segue o tema
+    frame: false,
+    titleBarStyle: 'hidden',
   });
 
   // Carregar a aplicação
@@ -75,23 +66,13 @@ function createWindow() {
     }
   });
 
-  // Atualizar background e barra de título quando tema do sistema mudar
+  // Atualizar background quando tema do sistema mudar
   nativeTheme.on('updated', () => {
-    // Force theme update to ensure title bar follows system theme
     nativeTheme.themeSource = 'system';
 
     const newBackgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
     if (mainWindow) {
       mainWindow.setBackgroundColor(newBackgroundColor);
-
-      // Atualizar cor da barra de título no Windows
-      if (process.platform === 'win32') {
-        mainWindow.setTitleBarOverlay({
-          color: nativeTheme.shouldUseDarkColors ? '#202020' : '#ffffff',
-          symbolColor: nativeTheme.shouldUseDarkColors ? '#ffffff' : '#000000',
-          height: 33
-        });
-      }
     }
   });
 
@@ -220,6 +201,38 @@ ipcMain.handle('check-for-updates', async () => {
 // Obter versão do app
 ipcMain.handle('get-app-version', () => {
   return app.getVersion();
+});
+
+// ========== WINDOW CONTROLS (Custom Title Bar) ==========
+
+// Minimizar janela
+ipcMain.on('window-minimize', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+// Maximizar/Restaurar janela
+ipcMain.on('window-maximize', () => {
+  if (mainWindow) {
+    if (mainWindow.isMaximized()) {
+      mainWindow.unmaximize();
+    } else {
+      mainWindow.maximize();
+    }
+  }
+});
+
+// Fechar janela
+ipcMain.on('window-close', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+// Verificar se está maximizada
+ipcMain.handle('window-is-maximized', () => {
+  return mainWindow ? mainWindow.isMaximized() : false;
 });
 
 console.log('Electron main process iniciado');

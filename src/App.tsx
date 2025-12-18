@@ -12,6 +12,7 @@ import { usePWAInstall } from './hooks/usePWAInstall';
 import { useUserStore } from './store/useUserStore';
 import SecurityWrapper from './components/Security/SecurityWrapper';
 import { useAuthStore } from './store/useAuthStore';
+import ElectronTitleBar from './components/Common/ElectronTitleBar';
 
 function App() {
   const {
@@ -168,7 +169,8 @@ function App() {
 
   return (
     <SecurityWrapper enabled={true} idleTimeout={idleTimeout}>
-      <div className="min-h-screen bg-transparent">
+      <ElectronTitleBar />
+      <div className="min-h-screen bg-transparent" style={{ paddingTop: window.electronAPI?.isElectron ? '32px' : '0' }}>
         <Layout canInstallPWA={canInstall} onInstallPWA={promptInstall} />
         {needRefresh && (
           <PwaUpdateNotification
