@@ -826,6 +826,46 @@
     "print": {
       "alt_text": "foto para impressao",
       "photo_alt": "foto-{{index}}"
+    },
+    "invitation": {
+      "title": "Gerador de Convites",
+      "subtitle": "Crie convites profissionais personalizados",
+      "type": "Tipo de Convite",
+      "format": "Formato",
+      "orientation": "Orientação",
+      "title_field": "Título",
+      "subtitle_field": "Subtítulo (opcional)",
+      "main_text": "Texto Principal",
+      "date": "Data",
+      "time": "Horário",
+      "location": "Local (opcional)",
+      "additional_info": "Informações Adicionais (opcional)",
+      "invitations_per_page": "Convites por Página A4",
+      "preview_title": "Pré-visualização",
+      "view_preview": "Visualizar",
+      "hide_preview": "Ocultar Preview",
+      "print": "Imprimir",
+      "download_pdf": "Baixar PDF",
+      "types": {
+        "wedding": "Casamento",
+        "birthday": "Aniversário",
+        "event": "Evento",
+        "corporate": "Corporativo",
+        "baby_shower": "Chá de Bebê",
+        "graduation": "Formatura"
+      },
+      "orientations": {
+        "portrait": "Vertical",
+        "landscape": "Horizontal"
+      },
+      "placeholders": {
+        "title": "Ex: Casamento de João e Maria",
+        "subtitle": "Ex: Celebração de Amor",
+        "main_text": "Texto do convite...",
+        "date": "Ex: 15 de Dezembro de 2025",
+        "time": "Ex: 18h00",
+        "location": "Ex: Salão de Festas Jardim"
+      }
     }
   },
   "legal": {

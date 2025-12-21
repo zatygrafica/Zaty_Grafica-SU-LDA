@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Upload, ZoomIn, ZoomOut, Move, Printer, X, Check, Edit, Trash2, Download } from 'lucide-react';
+import { Upload, ZoomIn, ZoomOut, Move, Printer, X, Check, Edit, Trash2, Download, Image, Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import InvitationGenerator from './InvitationGenerator';
 
 interface Photo {
   id: string;
@@ -108,6 +109,10 @@ const renderPhotoDataUrl = (
 
 const ZatyPasse: React.FC = () => {
   const { t } = useTranslation();
+
+  // NEW: State to control which feature is active (passport photos or invitation generator)
+  const [activeFeature, setActiveFeature] = useState<'passport' | 'invitation'>('passport');
+
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -503,9 +508,43 @@ const ZatyPasse: React.FC = () => {
   const colGapPx = 12;
   const rowGapPx = 2;
 
+  // NEW: If invitation generator is active, render it instead
+  if (activeFeature === 'invitation') {
+    return <InvitationGenerator />;
+  }
+
+  // Original passport photos functionality (unchanged)
   return (
     <div className="min-h-screen bg-gradient-to-b from-white via-purple-50 to-indigo-100 dark:from-neutral-900 dark:via-neutral-900/90 dark:to-neutral-950 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
+        {/* NEW: Feature Tabs */}
+        <div className="flex justify-center">
+          <div className="inline-flex bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-lg">
+            <button
+              onClick={() => setActiveFeature('passport')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-all ${
+                activeFeature === 'passport'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700'
+              }`}
+            >
+              <Image className="w-5 h-5" />
+              Fotos 3x4
+            </button>
+            <button
+              onClick={() => setActiveFeature('invitation')}
+              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-all ${
+                activeFeature === 'invitation'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700'
+              }`}
+            >
+              <Mail className="w-5 h-5" />
+              Convites
+            </button>
+          </div>
+        </div>
+
         <div className="text-center">
           <h1 className="text-4xl font-bold text-indigo-900 dark:text-white mb-2">{t('passport_photos.title')}</h1>
           <p className="text-gray-600 dark:text-gray-300 text-sm">{t('passport_photos.subtitle')}</p>

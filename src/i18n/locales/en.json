@@ -826,6 +826,46 @@
     "print": {
       "alt_text": "photo for printing",
       "photo_alt": "photo-{{index}}"
+    },
+    "invitation": {
+      "title": "Invitation Generator",
+      "subtitle": "Create professional personalized invitations",
+      "type": "Invitation Type",
+      "format": "Format",
+      "orientation": "Orientation",
+      "title_field": "Title",
+      "subtitle_field": "Subtitle (optional)",
+      "main_text": "Main Text",
+      "date": "Date",
+      "time": "Time",
+      "location": "Location (optional)",
+      "additional_info": "Additional Information (optional)",
+      "invitations_per_page": "Invitations per A4 Page",
+      "preview_title": "Preview",
+      "view_preview": "View Preview",
+      "hide_preview": "Hide Preview",
+      "print": "Print",
+      "download_pdf": "Download PDF",
+      "types": {
+        "wedding": "Wedding",
+        "birthday": "Birthday",
+        "event": "Event",
+        "corporate": "Corporate",
+        "baby_shower": "Baby Shower",
+        "graduation": "Graduation"
+      },
+      "orientations": {
+        "portrait": "Portrait",
+        "landscape": "Landscape"
+      },
+      "placeholders": {
+        "title": "Ex: John and Mary's Wedding",
+        "subtitle": "Ex: A Celebration of Love",
+        "main_text": "Invitation text...",
+        "date": "Ex: December 15, 2025",
+        "time": "Ex: 6:00 PM",
+        "location": "Ex: Garden Party Hall"
+      }
     }
   },
   "legal": {
