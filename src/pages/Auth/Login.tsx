@@ -5,6 +5,7 @@ import { Mail, Lock, Eye, EyeOff, Shield, FileText, BarChart3, CheckSquare } fro
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 import LegalDocumentsDrawer from '../../components/LegalDocumentsDrawer';
+import ElectronTitleBar from '../../components/Common/ElectronTitleBar';
 
 const LoginPage: React.FC = () => {
   const { t } = useTranslation();
@@ -41,7 +42,12 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0C1424] dark:via-[#0D1C2D] dark:to-[#093A5C] text-gray-900 dark:text-white transition-colors duration-300">
+    <>
+      <ElectronTitleBar />
+      <div
+        className="min-h-screen w-full overflow-x-hidden bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0C1424] dark:via-[#0D1C2D] dark:to-[#093A5C] text-gray-900 dark:text-white transition-colors duration-300"
+        style={{ paddingTop: window.electronAPI?.isElectron ? '32px' : '0' }}
+      >
       <div className="mx-auto flex min-h-screen max-w-7xl flex-col justify-between px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <div className="flex flex-1 flex-col justify-center gap-8 lg:flex-row lg:items-center lg:gap-16">
           {/* Left Section - Info Cards */}
@@ -176,7 +182,8 @@ const LoginPage: React.FC = () => {
         onClose={() => setLegalDrawerOpen(false)}
         selectedDocument={selectedDocument}
       />
-    </div>
+      </div>
+    </>
   );
 };
 
