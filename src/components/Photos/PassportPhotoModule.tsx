@@ -510,7 +510,7 @@ const ZatyPasse: React.FC = () => {
 
   // NEW: If invitation generator is active, render it instead
   if (activeFeature === 'invitation') {
-    return <InvitationGenerator />;
+    return <InvitationGenerator onBack={() => setActiveFeature('passport')} />;
   }
 
   // Original passport photos functionality (unchanged)
@@ -522,22 +522,20 @@ const ZatyPasse: React.FC = () => {
           <div className="inline-flex bg-white dark:bg-neutral-800 rounded-lg p-1 shadow-lg">
             <button
               onClick={() => setActiveFeature('passport')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-all ${
-                activeFeature === 'passport'
+              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-all ${activeFeature === 'passport'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700'
-              }`}
+                }`}
             >
               <Image className="w-5 h-5" />
               Fotos 3x4
             </button>
             <button
               onClick={() => setActiveFeature('invitation')}
-              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-all ${
-                activeFeature === 'invitation'
+              className={`flex items-center gap-2 px-6 py-3 rounded-md font-medium transition-all ${activeFeature === 'invitation'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700'
-              }`}
+                }`}
             >
               <Mail className="w-5 h-5" />
               Convites
@@ -667,9 +665,8 @@ const ZatyPasse: React.FC = () => {
 
                     <button
                       onClick={() => toggleSelection(photo.id)}
-                      className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${
-                        selectedForPrint.has(photo.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 hover:border-green-600'
-                      }`}
+                      className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-all ${selectedForPrint.has(photo.id) ? 'bg-green-600 border-green-600 text-white' : 'border-gray-300 hover:border-green-600'
+                        }`}
                     >
                       {selectedForPrint.has(photo.id) && <Check className="w-4 h-4" />}
                     </button>

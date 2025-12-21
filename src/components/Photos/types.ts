@@ -27,7 +27,7 @@ export type InvitationType = 'wedding' | 'birthday' | 'event' | 'corporate' | 'b
 
 export type WeddingType = 'christian' | 'nikah';
 
-export type PaperFormat = 'A5' | 'A6' | 'A7';
+export type PaperFormat = 'A4' | 'A5' | 'A6' | 'A7';
 
 export type Orientation = 'portrait' | 'landscape';
 
@@ -37,6 +37,7 @@ export interface PaperDimensions {
 }
 
 export const PAPER_DIMENSIONS: Record<PaperFormat, PaperDimensions> = {
+  A4: { width: 210, height: 297 },
   A5: { width: 148, height: 210 },
   A6: { width: 105, height: 148 },
   A7: { width: 74, height: 105 },
@@ -68,6 +69,7 @@ export interface InvitationData {
   showBismillah?: boolean; // Para Nikah
   guestName?: string;
   includeGuestName?: boolean;
+  showManualGuestField?: boolean; // Campo em branco para preenchimento manual
 
   // Configurações visuais
   theme: {
