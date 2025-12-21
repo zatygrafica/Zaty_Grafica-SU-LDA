@@ -10,6 +10,7 @@ import { clsx } from 'clsx';
 import Input from '../Common/Input';
 import Button from '../Common/Button';
 import { storageService } from '../../services/storageService';
+import Avatar from '../Common/Avatar';
 
 interface ConversationListProps {
   selectedConversationId: string | null;
@@ -177,20 +178,14 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
               className="p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800/50"
             >
               <div className="relative">
-                {user.photoUrl ? (
-                  <img
-                    src={avatarCache[user.id] ?? user.photoUrl}
-                    alt={user.name}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-gray-500" />
-                  </div>
-                )}
+                <Avatar
+                  name={user.name}
+                  src={avatarCache[user.id] ?? user.photoUrl}
+                  size="w-10 h-10"
+                />
                 <span
                   className={clsx(
-                    'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white dark:border-neutral-900',
+                    'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-neutral-900',
                     onlineUserIds.includes(user.id) ? 'bg-green-500' : 'bg-gray-400'
                   )}
                   title={onlineUserIds.includes(user.id) ? 'Online' : 'Offline'}
@@ -215,20 +210,14 @@ const ConversationList: React.FC<ConversationListProps> = ({ selectedConversatio
             )}
           >
             <div className="relative">
-              {otherUser?.photoUrl ? (
-                <img
-                  src={avatarCache[otherUser.id] ?? otherUser.photoUrl}
-                  alt={otherUser.name}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-neutral-700 flex items-center justify-center">
-                  <UserIcon className="w-5 h-5 text-gray-500" />
-                </div>
-              )}
+              <Avatar
+                name={otherUser?.name || 'Usuário'}
+                src={otherUser ? (avatarCache[otherUser.id] ?? otherUser.photoUrl) : undefined}
+                size="w-10 h-10"
+              />
               <span
                 className={clsx(
-                  'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-white dark:border-neutral-900',
+                  'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white dark:border-neutral-900',
                   isOnline ? 'bg-green-500' : 'bg-gray-400'
                 )}
                 title={isOnline ? 'Online' : 'Offline'}

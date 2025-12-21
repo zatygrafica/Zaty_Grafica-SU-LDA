@@ -1,9 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 
 type AvatarProps = {
   name: string;
   src?: string;
-  size?: string; // tailwind size classes e.g. w-8 h-8
+  size?: string; // tailwind size classes e.g. w-10 h-10
   className?: string;
 };
 
@@ -25,27 +25,55 @@ const getInitials = (name: string) => {
 };
 
 const Avatar: React.FC<AvatarProps> = ({ name, src, size = 'w-10 h-10', className = '' }) => {
-  const [errored, setErrored] = useState(false);
+  const [imageState, setImageState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const initials = useMemo(() => getInitials(name), [name]);
   const bgColor = useMemo(() => hashToColor(name || 'user'), [name]);
+
+  useEffect(() => {
+    if (!src) {
+      setImageState('error');
+      return;
+    }
+
+    setImageState('loading');
+    setLoadedSrc(null);
+
+    const img = new Image();
+
+    img.onload = () => {
+      setLoadedSrc(src);
+      setImageState('loaded');
+    };
+
+    img.onerror = () => {
+      setImageState('error');
+    };
+
+    img.src = src;
+
+    return () => {
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [src]);
 
   return (
     <div
       className={`rounded-full flex items-center justify-center overflow-hidden shrink-0 ${size} ${className}`}
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: imageState === 'loaded' ? 'transparent' : bgColor }}
       aria-label={name}
       title={name}
     >
-      {!src || errored ? (
-        <span className="text-white font-semibold text-xs select-none">{initials}</span>
-      ) : (
+      {imageState === 'loaded' && loadedSrc ? (
         <img
-          src={src}
+          src={loadedSrc}
           alt={name}
           className="w-full h-full object-cover"
-          onError={() => setErrored(true)}
           loading="lazy"
         />
+      ) : (
+        <span className="text-white font-semibold text-xs select-none">{initials}</span>
       )}
     </div>
   );
