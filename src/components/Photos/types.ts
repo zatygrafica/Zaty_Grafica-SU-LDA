@@ -25,6 +25,8 @@ export interface Photo {
 
 export type InvitationType = 'wedding' | 'birthday' | 'event' | 'corporate' | 'baby_shower' | 'graduation';
 
+export type WeddingType = 'christian' | 'nikah';
+
 export type PaperFormat = 'A5' | 'A6' | 'A7';
 
 export type Orientation = 'portrait' | 'landscape';
@@ -58,6 +60,14 @@ export interface InvitationData {
   time?: string;
   location?: string;
   additionalInfo?: string;
+
+  // NEW: Wedding-specific fields
+  weddingType?: WeddingType;
+  groomName?: string;
+  brideName?: string;
+  showBismillah?: boolean; // Para Nikah
+  guestName?: string;
+  includeGuestName?: boolean;
 
   // Configurações visuais
   theme: {
@@ -104,3 +114,51 @@ export interface InvitationPrintConfig {
   layout: A4Layout;
   copies: number;
 }
+
+// ============================================
+// UTILITY FUNCTIONS FOR ADAPTIVE TEXT
+// ============================================
+
+export const getDefaultInvitationText = (type: InvitationType, weddingType?: WeddingType, includeGuest?: boolean): string => {
+  if (type === 'wedding') {
+    if (weddingType === 'nikah') {
+      return includeGuest
+        ? `Com grande alegria, convidamos ${includeGuest ? 'você' : 'a todos'} para celebrar a união sagrada através do Nikah.
+
+A cerimônia será realizada conforme as tradições islâmicas, e sua presença honrará este momento especial em nossas vidas.`
+        : `Com grande alegria, convidamos a todos para celebrar a união sagrada através do Nikah.
+
+A cerimônia será realizada conforme as tradições islâmicas, e sua presença honrará este momento especial em nossas vidas.`;
+    }
+
+    return includeGuest
+      ? `Com imensa alegria, convidamos você para celebrar a união de nossos corações.
+
+Será uma honra compartilhar este momento especial ao seu lado.`
+      : `Com imensa alegria, convidamos a todos para celebrar a união de nossos corações.
+
+Será uma honra compartilhar este momento especial com vocês.`;
+  }
+
+  if (type === 'birthday') {
+    return includeGuest
+      ? `Você está convidado para uma celebração especial!
+
+Venha comemorar conosco este dia inesquecível.`
+      : `Todos estão convidados para uma celebração especial!
+
+Venham comemorar conosco este dia inesquecível.`;
+  }
+
+  if (type === 'event') {
+    return includeGuest
+      ? `É com grande satisfação que convidamos você para participar deste evento.
+
+Sua presença será muito importante para nós.`
+      : `É com grande satisfação que convidamos a todos para participar deste evento.
+
+A presença de todos será muito importante para nós.`;
+  }
+
+  return 'Texto do convite...';
+};

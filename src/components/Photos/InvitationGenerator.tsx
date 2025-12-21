@@ -5,20 +5,22 @@ import {
   Printer,
   Download,
   Eye,
-  Palette,
   Layout,
   Grid3x3,
+  ArrowLeft,
 } from 'lucide-react';
 import Button from '../Common/Button';
 import Input from '../Common/Input';
 import {
   InvitationData,
   InvitationType,
+  WeddingType,
   PaperFormat,
   Orientation,
   PAPER_DIMENSIONS,
   A4_DIMENSIONS,
   A4Layout,
+  getDefaultInvitationText,
 } from './types';
 import {
   WeddingElegantTemplate,
@@ -43,11 +45,18 @@ const InvitationGenerator: React.FC = () => {
     orientation: 'portrait',
     title: '',
     subtitle: '',
-    mainText: '',
+    mainText: getDefaultInvitationText('wedding', 'christian', false),
     date: '',
     time: '',
     location: '',
     additionalInfo: '',
+    // NEW: Wedding-specific fields
+    weddingType: 'christian',
+    groomName: '',
+    brideName: '',
+    showBismillah: false,
+    guestName: '',
+    includeGuestName: false,
     theme: {
       primaryColor: '#8B4789',
       secondaryColor: '#C084BD',
@@ -57,13 +66,30 @@ const InvitationGenerator: React.FC = () => {
     templateId: 'wedding-elegant',
   });
 
+  // NEW: Track if data has been modified (for navigation warning)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   // Estado do layout A4
   const [invitationsPerPage, setInvitationsPerPage] = useState<number>(4);
   const [showPreview, setShowPreview] = useState(false);
 
   // Atualizar dados do convite
   const updateInvitationData = (field: keyof InvitationData, value: any) => {
-    setInvitationData((prev) => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
+    setInvitationData((prev) => {
+      const updated = { ...prev, [field]: value };
+
+      // NEW: Auto-update main text when wedding type or guest inclusion changes
+      if (field === 'weddingType' || field === 'includeGuestName' || field === 'type') {
+        const newType = field === 'type' ? value : prev.type;
+        const newWeddingType = field === 'weddingType' ? value : prev.weddingType;
+        const includeGuest = field === 'includeGuestName' ? value : prev.includeGuestName;
+
+        updated.mainText = getDefaultInvitationText(newType, newWeddingType, includeGuest);
+      }
+
+      return updated;
+    });
   };
 
   // Calcular dimensões do convite baseado no formato e orientação
@@ -407,11 +433,11 @@ const InvitationGenerator: React.FC = () => {
                 <Eye className="w-4 h-4 mr-2" />
                 {showPreview ? 'Ocultar Preview' : 'Visualizar'}
               </Button>
-              <Button onClick={handlePrint} variant="outline" className="flex-1">
+              <Button onClick={handlePrint} variant="secondary" className="flex-1">
                 <Printer className="w-4 h-4 mr-2" />
                 Imprimir
               </Button>
-              <Button onClick={handleDownloadPDF} variant="outline">
+              <Button onClick={handleDownloadPDF} variant="secondary">
                 <Download className="w-4 h-4" />
               </Button>
             </div>
