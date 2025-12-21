@@ -34,6 +34,21 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
     }
   }, [isOpen]);
 
+  // Bloqueia scroll do body quando modal está aberto
+  useEffect(() => {
+    if (isOpen) {
+      // Salva o overflow original
+      const originalOverflow = document.body.style.overflow;
+      // Bloqueia scroll
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // Restaura o overflow original quando fechar
+        document.body.style.overflow = originalOverflow;
+      };
+    }
+  }, [isOpen]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
