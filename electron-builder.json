@@ -21,9 +21,10 @@
         "arch": ["x64", "ia32"]
       }
     ],
-    "icon": "public/icon-512x512.png",
-    "publisherName": "Zaty Gráfica, SU, LDA",
-    "artifactName": "${productName}-Setup-${version}.${ext}"
+    "icon": "build/icon.ico",
+    "artifactName": "${productName}-Setup-${version}.${ext}",
+    "signAndEditExecutable": false,
+    "verifyUpdateCodeSignature": false
   },
   "nsis": {
     "oneClick": false,
@@ -31,14 +32,23 @@
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
     "shortcutName": "Zaty Gráfica",
-    "installerIcon": "public/icon-512x512.png",
-    "uninstallerIcon": "public/icon-512x512.png",
-    "installerHeader": "public/icon-512x512.png",
-    "installerHeaderIcon": "public/icon-512x512.png",
+    "installerIcon": "build/icon.ico",
+    "uninstallerIcon": "build/icon.ico",
+    "installerHeader": "build/installer/header.bmp",
+    "installerSidebar": "build/installer/welcome.bmp",
     "deleteAppDataOnUninstall": false,
     "menuCategory": true,
     "runAfterFinish": true,
-    "language": "2070"
+    "license": "build/installer/LICENSE.txt",
+    "include": "build/installer/installer.nsh",
+    "perMachine": true,
+    "allowElevation": true,
+    "warningsAsErrors": false,
+    "displayLanguageSelector": false,
+    "installerLanguages": ["pt_BR"],
+    "language": "2070",
+    "multiLanguageInstaller": false,
+    "guid": "a3f8c9d1-2b5e-4a7c-9f3e-1d8b4c6a2e5f"
   },
   "mac": {
     "target": ["dmg", "zip"],
