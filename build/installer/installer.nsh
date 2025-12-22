@@ -9,6 +9,22 @@
 !include WinMessages.nsh
 
 ; ═══════════════════════════════════════════════════════════════════════════════
+; Constantes para Controles Windows
+; ═══════════════════════════════════════════════════════════════════════════════
+
+!define ES_MULTILINE 0x0004
+!define ES_READONLY 0x0800
+!define ES_WANTRETURN 0x1000
+!define ES_AUTOVSCROLL 0x0040
+!define ES_AUTOHSCROLL 0x0080
+!define WS_VSCROLL 0x00200000
+!define WS_HSCROLL 0x00100000
+!define WS_TABSTOP 0x00010000
+!define WS_EX_CLIENTEDGE 0x00000200
+!define EM_SETREADONLY 0x00CF
+!define BST_CHECKED 1
+
+; ═══════════════════════════════════════════════════════════════════════════════
 ; Variáveis Globais
 ; ═══════════════════════════════════════════════════════════════════════════════
 
@@ -102,9 +118,17 @@ Function LicensePage
     ${NSD_CreateLabel} 0 80u 100% 20u "Por favor, leia atentamente os Termos de Uso e a Política de Privacidade.$\r$\nVocê deve aceitar os termos para continuar a instalação."
     Pop $Label
 
-    ; Caixa de texto com scroll para o conteúdo da licença
-    ${NSD_CreateText} 0 105u 100% 110u ""
+    ; Caixa de texto MULTILINE com scroll (RichEdit20A para suportar muito texto)
+    nsDialogs::CreateControl /NOUNLOAD "RichEdit20A" \
+        ${ES_MULTILINE}|${ES_READONLY}|${ES_WANTRETURN}|${WS_VSCROLL}|${WS_HSCROLL}|${WS_TABSTOP}|${ES_AUTOVSCROLL}|${ES_AUTOHSCROLL} \
+        ${WS_EX_CLIENTEDGE} \
+        0 105u 100% 110u \
+        ""
     Pop $TextBox
+
+    ; Configurar fonte para melhor legibilidade
+    CreateFont $0 "Courier New" 8 400
+    SendMessage $TextBox ${WM_SETFONT} $0 0
 
     ; Carregar conteúdo do arquivo de licença
     FileOpen $0 "${BUILD_RESOURCES_DIR}\installer\LICENSE.txt" r
@@ -121,12 +145,6 @@ Function LicensePage
 
     ; Definir texto na caixa
     SendMessage $TextBox ${WM_SETTEXT} 0 "STR:$LicenseText"
-
-    ; Tornar a caixa de texto somente leitura e com scroll
-    SendMessage $TextBox ${EM_SETREADONLY} 1 0
-
-    ; Criar estilo de borda para a caixa de texto
-    System::Call 'user32::SetWindowLong(i$TextBox, i${GWL_EXSTYLE}, i${WS_EX_CLIENTEDGE})i.r0'
 
     ; Checkbox de aceitação
     ${NSD_CreateCheckbox} 0 220u 100% 12u "Li e aceito os Termos de Uso e a Política de Privacidade"
