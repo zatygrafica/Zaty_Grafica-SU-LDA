@@ -9,22 +9,6 @@
 !include WinMessages.nsh
 
 ; ═══════════════════════════════════════════════════════════════════════════════
-; Constantes para Controles Windows
-; ═══════════════════════════════════════════════════════════════════════════════
-
-!define ES_MULTILINE 0x0004
-!define ES_READONLY 0x0800
-!define ES_WANTRETURN 0x1000
-!define ES_AUTOVSCROLL 0x0040
-!define ES_AUTOHSCROLL 0x0080
-!define WS_VSCROLL 0x00200000
-!define WS_HSCROLL 0x00100000
-!define WS_TABSTOP 0x00010000
-!define WS_EX_CLIENTEDGE 0x00000200
-!define EM_SETREADONLY 0x00CF
-!define BST_CHECKED 1
-
-; ═══════════════════════════════════════════════════════════════════════════════
 ; Variáveis Globais
 ; ═══════════════════════════════════════════════════════════════════════════════
 
@@ -120,8 +104,8 @@ Function LicensePage
 
     ; Caixa de texto MULTILINE com scroll (RichEdit20A para suportar muito texto)
     nsDialogs::CreateControl /NOUNLOAD "RichEdit20A" \
-        ${ES_MULTILINE}|${ES_READONLY}|${ES_WANTRETURN}|${WS_VSCROLL}|${WS_HSCROLL}|${WS_TABSTOP}|${ES_AUTOVSCROLL}|${ES_AUTOHSCROLL} \
-        ${WS_EX_CLIENTEDGE} \
+        0x201844 \
+        0x00000200 \
         0 105u 100% 110u \
         ""
     Pop $TextBox
@@ -165,7 +149,7 @@ FunctionEnd
 Function OnLicenseCheckbox
     Pop $0
     ${NSD_GetState} $CheckBox $0
-    ${If} $0 == ${BST_CHECKED}
+    ${If} $0 == 1
         StrCpy $LicenseAccepted "1"
     ${Else}
         StrCpy $LicenseAccepted "0"
