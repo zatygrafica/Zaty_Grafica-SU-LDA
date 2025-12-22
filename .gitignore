@@ -6,3 +6,8 @@ dist/
 
 # Vercel
 .vercel
+
+# Build outputs
+dist/
+release/
+nul
