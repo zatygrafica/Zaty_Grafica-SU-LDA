@@ -18,7 +18,10 @@
     "target": [
       {
         "target": "nsis",
-        "arch": ["x64", "ia32"]
+        "arch": [
+          "x64",
+          "ia32"
+        ]
       }
     ],
     "icon": "build/icon.ico",
@@ -35,23 +38,27 @@
     "installerIcon": "build/icon.ico",
     "uninstallerIcon": "build/icon.ico",
     "installerHeader": "build/installer/header.bmp",
-    "installerSidebar": "build/installer/welcome.bmp",
+    "installerSidebar": "build/installer/sidebar.bmp",
     "deleteAppDataOnUninstall": false,
     "menuCategory": true,
     "runAfterFinish": true,
-    "license": "build/installer/LICENSE.txt",
     "include": "build/installer/installer.nsh",
     "perMachine": true,
     "allowElevation": true,
     "warningsAsErrors": false,
     "displayLanguageSelector": false,
-    "installerLanguages": ["pt_BR"],
+    "installerLanguages": [
+      "pt_BR"
+    ],
     "language": "2070",
     "multiLanguageInstaller": false,
     "guid": "a3f8c9d1-2b5e-4a7c-9f3e-1d8b4c6a2e5f"
   },
   "mac": {
-    "target": ["dmg", "zip"],
+    "target": [
+      "dmg",
+      "zip"
+    ],
     "icon": "public/icon-512x512.png",
     "category": "public.app-category.business",
     "hardenedRuntime": true,
@@ -60,7 +67,10 @@
     "entitlementsInherit": "build/entitlements.mac.plist"
   },
   "linux": {
-    "target": ["AppImage", "deb"],
+    "target": [
+      "AppImage",
+      "deb"
+    ],
     "icon": "public/icon-512x512.png",
     "category": "Office",
     "artifactName": "${productName}-${version}.${ext}"

@@ -1,157 +1,120 @@
-TERMOS DE USO E POLÍTICA DE PRIVACIDADE
-Zaty Gráfica - Sistema de Gestão Empresarial
-Versão 1.0.0 | Atualizado em 22 de dezembro de 2025
+TERMOS DE USO E POLITICA DE PRIVACIDADE
+Zaty Grafica - Sistema de Gestao Empresarial
+Versao 1.0.0 | Atualizado em Dezembro de 2025
 
-═══════════════════════════════════════════════════════════════════════════════
+===============================================================================
 
 1. TERMOS DE USO
 
-1.1. ACEITAÇÃO DOS TERMOS
-Ao instalar e utilizar o Sistema de Gestão Zaty Gráfica (doravante "Sistema"), você
-concorda com todos os termos e condições aqui estabelecidos. Se você não concordar
-com estes termos, não instale nem utilize o Sistema.
+1.1. ACEITACAO DOS TERMOS
+Ao instalar e utilizar o Sistema de Gestao Zaty Grafica (doravante "Sistema"),
+voce concorda com todos os termos e condicoes aqui estabelecidos. Se voce nao
+concordar com estes termos, nao instale nem utilize o Sistema.
 
-1.2. LICENÇA DE USO
-Este Sistema é propriedade exclusiva da Zaty Gráfica, SU, LDA. É concedida uma
-licença não exclusiva, intransferível e limitada para uso do Sistema conforme os
-termos aqui estabelecidos.
+1.2. LICENCA DE USO
+Este Sistema e propriedade exclusiva da Zaty Grafica, SU, LDA. E concedida uma
+licenca nao exclusiva, intransferivel e limitada para uso do Sistema conforme
+os termos aqui estabelecidos.
 
-1.3. RESTRIÇÕES DE USO
-É expressamente proibido:
-• Copiar, modificar, distribuir ou criar trabalhos derivados do Sistema
-• Realizar engenharia reversa, descompilar ou desmontar o Sistema
-• Remover ou alterar avisos de direitos autorais ou marcas registradas
-• Utilizar o Sistema para fins ilegais ou não autorizados
-• Compartilhar credenciais de acesso com terceiros não autorizados
+1.3. RESTRICOES DE USO
+E expressamente proibido:
+- Copiar, modificar, distribuir ou criar trabalhos derivados do Sistema
+- Realizar engenharia reversa, descompilar ou desmontar o Sistema
+- Remover ou alterar avisos de direitos autorais ou marcas registradas
+- Utilizar o Sistema para fins ilegais ou nao autorizados
+- Compartilhar credenciais de acesso com terceiros nao autorizados
 
 1.4. PROPRIEDADE INTELECTUAL
-Todos os direitos de propriedade intelectual relacionados ao Sistema, incluindo mas
-não se limitando a código-fonte, design, logotipos, marcas e documentação, são de
-propriedade exclusiva da Zaty Gráfica, SU, LDA.
+Todos os direitos de propriedade intelectual relacionados ao Sistema, incluindo
+codigo-fonte, design, logotipos, marcas e documentacao, sao de propriedade
+exclusiva da Zaty Grafica, SU, LDA.
 
-1.5. ATUALIZAÇÕES E SUPORTE
-A Zaty Gráfica reserva-se o direito de fornecer atualizações, correções e melhorias
-do Sistema. O suporte técnico será fornecido conforme acordado comercialmente.
+===============================================================================
 
-1.6. RESCISÃO
-A licença de uso poderá ser rescindida imediatamente em caso de violação destes
-termos. Após a rescisão, você deverá cessar todo uso do Sistema e deletar todas
-as cópias instaladas.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-2. POLÍTICA DE PRIVACIDADE
+2. POLITICA DE PRIVACIDADE
 
 2.1. COLETA DE DADOS
 O Sistema coleta e processa os seguintes tipos de dados:
-• Dados de autenticação (e-mail, senha criptografada)
-• Informações de perfil (nome completo, foto de perfil)
-• Dados operacionais (clientes, produtos, serviços, vendas)
-• Dados de comunicação (mensagens do chat interno)
-• Metadados de uso (logs de acesso, ações realizadas)
+- Dados de autenticacao (e-mail, senha criptografada)
+- Informacoes de perfil (nome completo, foto de perfil)
+- Dados operacionais (clientes, produtos, servicos, vendas)
+- Dados de comunicacao (mensagens do chat interno)
+- Metadados de uso (logs de acesso, acoes realizadas)
 
 2.2. USO DOS DADOS
-Os dados coletados são utilizados para:
-• Autenticação e controle de acesso ao Sistema
-• Processamento de operações comerciais e administrativas
-• Comunicação interna entre usuários
-• Análise de desempenho e melhorias do Sistema
-• Cumprimento de obrigações legais e regulatórias
+Os dados coletados sao utilizados para:
+- Autenticacao e controle de acesso ao Sistema
+- Processamento de operacoes comerciais e administrativas
+- Comunicacao interna entre usuarios
+- Analise de desempenho e melhorias do Sistema
+- Cumprimento de obrigacoes legais e regulatorias
 
-2.3. ARMAZENAMENTO E SEGURANÇA
-• Todos os dados são armazenados em servidores seguros com criptografia
-• Senhas são armazenadas usando hash criptográfico (bcrypt)
-• Implementamos medidas técnicas e organizacionais para proteger os dados
-• Acesso aos dados é restrito apenas a pessoal autorizado
-• Realizamos backups regulares para garantir a integridade dos dados
+2.3. ARMAZENAMENTO E SEGURANCA
+- Todos os dados sao armazenados em servidores seguros com criptografia
+- Senhas sao armazenadas usando hash criptografico (bcrypt)
+- Implementamos medidas tecnicas e organizacionais para proteger os dados
+- Acesso aos dados e restrito apenas a pessoal autorizado
+- Realizamos backups regulares para garantir a integridade dos dados
 
 2.4. COMPARTILHAMENTO DE DADOS
-Os dados NÃO são compartilhados com terceiros, exceto:
-• Quando exigido por lei ou ordem judicial
-• Para prestadores de serviço essenciais (infraestrutura cloud)
-• Com consentimento expresso do titular dos dados
+Os dados NAO sao compartilhados com terceiros, exceto:
+- Quando exigido por lei ou ordem judicial
+- Para prestadores de servico essenciais (infraestrutura cloud)
+- Com consentimento expresso do titular dos dados
 
-2.5. DIREITOS DO USUÁRIO
-Você tem o direito de:
-• Acessar seus dados pessoais armazenados no Sistema
-• Solicitar correção de dados incorretos ou incompletos
-• Solicitar exclusão de dados (sujeito a obrigações legais)
-• Exportar seus dados em formato estruturado
-• Revogar consentimento para processamento de dados
+2.5. DIREITOS DO USUARIO
+Voce tem o direito de:
+- Acessar seus dados pessoais armazenados no Sistema
+- Solicitar correcao de dados incorretos ou incompletos
+- Solicitar exclusao de dados (sujeito a obrigacoes legais)
+- Exportar seus dados em formato estruturado
+- Revogar consentimento para processamento de dados
 
-2.6. COOKIES E ARMAZENAMENTO LOCAL
-O Sistema utiliza armazenamento local (IndexedDB, localStorage) para:
-• Manter sessão de usuário autenticado
-• Cache de dados para funcionamento offline
-• Preferências de interface e configurações do usuário
+===============================================================================
 
-2.7. RETENÇÃO DE DADOS
-• Dados operacionais: mantidos indefinidamente para fins contábeis e legais
-• Dados de usuários inativos: mantidos por 5 anos após última atividade
-• Logs de sistema: mantidos por 12 meses
-• Backups: mantidos por 30 dias com rotação automática
-
-2.8. TRANSFERÊNCIA INTERNACIONAL
-Os dados podem ser armazenados em servidores localizados fora de Moçambique,
-especificamente em data centers da Supabase (Estados Unidos e Europa), que
-aderem a padrões internacionais de proteção de dados.
-
-2.9. SEGURANÇA INFANTIL
-O Sistema não é destinado a menores de 18 anos. Não coletamos intencionalmente
-dados de menores. Se tomarmos conhecimento de coleta inadvertida, os dados serão
-imediatamente deletados.
-
-2.10. ALTERAÇÕES NA POLÍTICA
-Esta Política de Privacidade pode ser atualizada periodicamente. Mudanças
-substanciais serão comunicadas aos usuários através do Sistema. O uso continuado
-após alterações constitui aceitação das novas políticas.
-
-═══════════════════════════════════════════════════════════════════════════════
-
-3. LIMITAÇÃO DE RESPONSABILIDADE
+3. LIMITACAO DE RESPONSABILIDADE
 
 3.1. GARANTIAS
-O Sistema é fornecido "como está" e "conforme disponível". A Zaty Gráfica não
-garante que o Sistema será ininterrupto, livre de erros ou completamente seguro.
+O Sistema e fornecido "como esta" e "conforme disponivel". A Zaty Grafica nao
+garante que o Sistema sera ininterrupto, livre de erros ou completamente seguro.
 
-3.2. LIMITAÇÃO DE DANOS
-Em nenhuma circunstância a Zaty Gráfica será responsável por danos indiretos,
+3.2. LIMITACAO DE DANOS
+Em nenhuma circunstancia a Zaty Grafica sera responsavel por danos indiretos,
 incidentais, especiais, consequenciais ou punitivos, incluindo perda de lucros,
 dados ou goodwill.
 
 3.3. BACKUP DE DADOS
-É responsabilidade do usuário manter backups adequados de seus dados. A Zaty
-Gráfica não se responsabiliza por perda de dados, exceto em casos de negligência
+E responsabilidade do usuario manter backups adequados de seus dados. A Zaty
+Grafica nao se responsabiliza por perda de dados, exceto em casos de negligencia
 grave comprovada.
 
-═══════════════════════════════════════════════════════════════════════════════
+===============================================================================
 
-4. DISPOSIÇÕES GERAIS
+4. DISPOSICOES GERAIS
 
-4.1. LEI APLICÁVEL
-Estes termos são regidos pelas leis de Moçambique. Qualquer disputa será resolvida
-nos tribunais competentes de Maputo, Moçambique.
+4.1. LEI APLICAVEL
+Estes termos sao regidos pelas leis de Mocambique. Qualquer disputa sera resolvida
+nos tribunais competentes de Maputo, Mocambique.
 
 4.2. DIVISIBILIDADE
-Se qualquer disposição destes termos for considerada inválida ou inexequível, as
-demais disposições permanecerão em pleno vigor e efeito.
+Se qualquer disposicao destes termos for considerada invalida ou inexequivel, as
+demais disposicoes permanecerao em pleno vigor e efeito.
 
 4.3. ACORDO INTEGRAL
-Estes termos constituem o acordo integral entre você e a Zaty Gráfica em relação
+Estes termos constituem o acordo integral entre voce e a Zaty Grafica em relacao
 ao uso do Sistema, substituindo todos os acordos anteriores.
 
 4.4. CONTATO
-Para questões sobre estes termos ou sobre privacidade, entre em contato:
+Para questoes sobre estes termos ou sobre privacidade, entre em contato:
 
-Zaty Gráfica, SU, LDA
-Maputo, Moçambique
+Zaty Grafica, SU, LDA
+Maputo, Mocambique
 Email: suporte@zatygrafica.co.mz
-Telefone: +258 XX XXX XXXX
 
-═══════════════════════════════════════════════════════════════════════════════
+===============================================================================
 
-Ao clicar em "Aceito" ou ao instalar este software, você confirma que leu,
-compreendeu e concordou com todos os Termos de Uso e a Política de Privacidade
+Ao clicar em "Eu Concordo" ou ao instalar este software, voce confirma que leu,
+compreendeu e concordou com todos os Termos de Uso e a Politica de Privacidade
 acima descritos.
 
-Copyright © 2025 Zaty Gráfica, SU, LDA. Todos os direitos reservados.
+Copyright 2025 Zaty Grafica, SU, LDA. Todos os direitos reservados.
