@@ -1,7 +1,7 @@
 {
   "appId": "com.zatygrafica.app",
-  "productName": "Zaty Gráfica",
-  "copyright": "Copyright © 2025 Zaty Gráfica, SU, LDA",
+  "productName": "Zaty Grafica",
+  "copyright": "Copyright 2025 Zaty Grafica, SU, LDA",
   "directories": {
     "output": "release",
     "buildResources": "build"
@@ -34,11 +34,12 @@
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": true,
     "createStartMenuShortcut": true,
-    "shortcutName": "Zaty Gráfica",
+    "shortcutName": "Zaty Grafica",
     "installerIcon": "build/icon.ico",
     "uninstallerIcon": "build/icon.ico",
     "installerHeader": "build/installer/header.bmp",
     "installerSidebar": "build/installer/sidebar.bmp",
+    "license": "build/installer/LICENSE.txt",
     "deleteAppDataOnUninstall": false,
     "menuCategory": true,
     "runAfterFinish": true,
