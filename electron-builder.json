@@ -9,6 +9,7 @@
   "files": [
     "dist/**/*",
     "electron-main/**/*",
+    "build/icon.ico",
     "package.json"
   ],
   "extraMetadata": {
