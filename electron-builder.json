@@ -12,6 +12,9 @@
     "build/icon.ico",
     "package.json"
   ],
+  "asarUnpack": [
+    "build/icon.ico"
+  ],
   "extraMetadata": {
     "main": "electron-main/main.cjs"
   },
@@ -39,7 +42,7 @@
     "installerIcon": "build/icon.ico",
     "uninstallerIcon": "build/icon.ico",
     "installerHeader": "build/installer/header.bmp",
-    "installerSidebar": "build/installer/sidebar.bmp",
+    "installerSidebar": "build/installer/welcome.bmp",
     "license": "build/installer/LICENSE.txt",
     "deleteAppDataOnUninstall": false,
     "menuCategory": true,

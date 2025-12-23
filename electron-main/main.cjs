@@ -31,11 +31,17 @@ function createWindow() {
   if (isDev) {
     iconPath = path.join(__dirname, '../public/icon-512x512.png');
   } else {
-    // Em produção, usar o ícone do build
-    iconPath = path.join(__dirname, '../build/icon.ico');
+    // Em produção, o ícone é empacotado no diretório resources
+    // Electron automaticamente procura por icon.ico no app.asar
+    iconPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'build', 'icon.ico');
+    // Fallback para quando app não está em asar
+    if (!require('fs').existsSync(iconPath)) {
+      iconPath = path.join(__dirname, '..', 'build', 'icon.ico');
+    }
   }
 
   console.log('Icon path:', iconPath);
+  console.log('Icon exists:', require('fs').existsSync(iconPath));
 
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -64,12 +70,27 @@ function createWindow() {
     mainWindow.webContents.openDevTools(); // Abrir DevTools automaticamente
   } else {
     // Modo produção - carregar arquivos buildados
-    const indexPath = path.join(__dirname, '../dist/index.html');
+    // Quando empacotado, __dirname aponta para electron-main dentro do app.asar
+    // e dist está no mesmo nível que electron-main
+    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
     console.log('Loading index.html from:', indexPath);
+    console.log('__dirname:', __dirname);
+    console.log('File exists:', require('fs').existsSync(indexPath));
+
     mainWindow.loadFile(indexPath).catch(err => {
       console.error('Erro ao carregar index.html:', err);
-      // Fallback: mostrar janela mesmo com erro
-      mainWindow.show();
+      console.error('Tentando caminho alternativo...');
+
+      // Fallback: tentar outro caminho possível
+      const altPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
+      console.log('Trying alternative path:', altPath);
+
+      mainWindow.loadFile(altPath).catch(err2 => {
+        console.error('Erro no caminho alternativo:', err2);
+        // Mostrar janela com erro para debugging
+        mainWindow.show();
+        mainWindow.loadURL('data:text/html,<h1>Erro ao carregar aplicação</h1><p>Verifique os logs do console</p>');
+      });
     });
   }
 
@@ -77,6 +98,11 @@ function createWindow() {
   mainWindow.once('ready-to-show', () => {
     console.log('Window ready to show');
     mainWindow.show();
+
+    // Abrir DevTools em produção para debug (remover depois)
+    if (!isDev) {
+      mainWindow.webContents.openDevTools();
+    }
 
     // Checar atualizações apenas em produção
     if (!isDev) {
