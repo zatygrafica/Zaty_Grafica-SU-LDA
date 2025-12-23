@@ -26,12 +26,23 @@ function createWindow() {
   // Define background color based on system theme
   const backgroundColor = nativeTheme.shouldUseDarkColors ? '#0a0a0a' : '#ffffff';
 
+  // Definir caminho do ícone baseado no ambiente
+  let iconPath;
+  if (isDev) {
+    iconPath = path.join(__dirname, '../public/icon-512x512.png');
+  } else {
+    // Em produção, usar o ícone do build
+    iconPath = path.join(__dirname, '../build/icon.ico');
+  }
+
+  console.log('Icon path:', iconPath);
+
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 1024,
     minHeight: 768,
-    icon: path.join(__dirname, '../public/icon-512x512.png'),
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -53,11 +64,18 @@ function createWindow() {
     mainWindow.webContents.openDevTools(); // Abrir DevTools automaticamente
   } else {
     // Modo produção - carregar arquivos buildados
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    console.log('Loading index.html from:', indexPath);
+    mainWindow.loadFile(indexPath).catch(err => {
+      console.error('Erro ao carregar index.html:', err);
+      // Fallback: mostrar janela mesmo com erro
+      mainWindow.show();
+    });
   }
 
   // Mostrar janela quando estiver pronta (evita flash branco)
   mainWindow.once('ready-to-show', () => {
+    console.log('Window ready to show');
     mainWindow.show();
 
     // Checar atualizações apenas em produção
@@ -65,6 +83,14 @@ function createWindow() {
       checkForUpdates();
     }
   });
+
+  // Fallback: mostrar janela após 5 segundos se não receber ready-to-show
+  setTimeout(() => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      console.log('Forcing window to show after timeout');
+      mainWindow.show();
+    }
+  }, 5000);
 
   // Atualizar background quando tema do sistema mudar
   nativeTheme.on('updated', () => {
@@ -79,6 +105,15 @@ function createWindow() {
   // Cleanup quando janela fechar
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  // Log de erros do renderer
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+    console.error('Failed to load:', errorCode, errorDescription);
+  });
+
+  mainWindow.webContents.on('crashed', () => {
+    console.error('Renderer process crashed!');
   });
 }
 
