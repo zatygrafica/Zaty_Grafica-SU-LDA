@@ -92,6 +92,9 @@ function createWindow() {
         mainWindow.loadURL('data:text/html,<h1>Erro ao carregar aplicação</h1><p>Verifique os logs do console</p>');
       });
     });
+
+    // TEMPORÁRIO: Abrir DevTools em produção para diagnosticar tela preta
+    mainWindow.webContents.openDevTools();
   }
 
   // Mostrar janela quando estiver pronta (evita flash branco)
@@ -176,66 +179,66 @@ function checkForUpdates() {
 if (autoUpdater) {
   // Quando encontrar atualização disponível
   autoUpdater.on('update-available', (info) => {
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Atualização Disponível',
-    message: `Nova versão ${info.version} disponível!`,
-    detail: 'Deseja baixar a atualização agora? O aplicativo será reiniciado após o download.',
-    buttons: ['Sim, baixar', 'Depois'],
-    defaultId: 0,
-    cancelId: 1
-  }).then(result => {
-    if (result.response === 0) {
-      autoUpdater.downloadUpdate();
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Atualização Disponível',
+      message: `Nova versão ${info.version} disponível!`,
+      detail: 'Deseja baixar a atualização agora? O aplicativo será reiniciado após o download.',
+      buttons: ['Sim, baixar', 'Depois'],
+      defaultId: 0,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        autoUpdater.downloadUpdate();
 
-      // Mostrar progresso do download
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'Baixando Atualização',
-        message: 'A atualização está sendo baixada em segundo plano.',
-        detail: 'Você será notificado quando estiver pronta.',
-        buttons: ['OK']
-      });
-    }
-  });
-});
-
-// Quando não houver atualização
-autoUpdater.on('update-not-available', () => {
-  console.log('Aplicativo está atualizado');
-});
-
-// Progresso do download (opcional - pode mostrar barra de progresso)
-autoUpdater.on('download-progress', (progressObj) => {
-  const message = `Baixando: ${Math.round(progressObj.percent)}%`;
-  console.log(message);
-
-  // Pode atualizar título da janela com progresso
-  if (mainWindow) {
-    mainWindow.setTitle(`Zaty Gráfica - ${message}`);
-  }
-});
-
-// Quando download completar
-autoUpdater.on('update-downloaded', (info) => {
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Atualização Pronta',
-    message: `Versão ${info.version} foi baixada com sucesso!`,
-    detail: 'O aplicativo será reiniciado agora para aplicar a atualização.',
-    buttons: ['Reiniciar Agora', 'Reiniciar Depois'],
-    defaultId: 0,
-    cancelId: 1
-  }).then(result => {
-    if (result.response === 0) {
-      // Reinstalar título original antes de reiniciar
-      if (mainWindow) {
-        mainWindow.setTitle('Zaty Gráfica');
+        // Mostrar progresso do download
+        dialog.showMessageBox(mainWindow, {
+          type: 'info',
+          title: 'Baixando Atualização',
+          message: 'A atualização está sendo baixada em segundo plano.',
+          detail: 'Você será notificado quando estiver pronta.',
+          buttons: ['OK']
+        });
       }
-      autoUpdater.quitAndInstall(false, true);
+    });
+  });
+
+  // Quando não houver atualização
+  autoUpdater.on('update-not-available', () => {
+    console.log('Aplicativo está atualizado');
+  });
+
+  // Progresso do download (opcional - pode mostrar barra de progresso)
+  autoUpdater.on('download-progress', (progressObj) => {
+    const message = `Baixando: ${Math.round(progressObj.percent)}%`;
+    console.log(message);
+
+    // Pode atualizar título da janela com progresso
+    if (mainWindow) {
+      mainWindow.setTitle(`Zaty Gráfica - ${message}`);
     }
   });
-});
+
+  // Quando download completar
+  autoUpdater.on('update-downloaded', (info) => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Atualização Pronta',
+      message: `Versão ${info.version} foi baixada com sucesso!`,
+      detail: 'O aplicativo será reiniciado agora para aplicar a atualização.',
+      buttons: ['Reiniciar Agora', 'Reiniciar Depois'],
+      defaultId: 0,
+      cancelId: 1
+    }).then(result => {
+      if (result.response === 0) {
+        // Reinstalar título original antes de reiniciar
+        if (mainWindow) {
+          mainWindow.setTitle('Zaty Gráfica');
+        }
+        autoUpdater.quitAndInstall(false, true);
+      }
+    });
+  });
 
   // Erro no auto-updater
   autoUpdater.on('error', (err) => {
