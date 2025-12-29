@@ -114,7 +114,7 @@ export const useStore = create<AppState>((set, get) => {
   };
 
   // Carrega configurações do Supabase na inicialização
-  void useSettingsStore
+  useSettingsStore
     .getState()
     .loadSettings(true)
     .then((settings) => {
@@ -128,7 +128,12 @@ export const useStore = create<AppState>((set, get) => {
         set({ language: settings.language });
       }
     })
-    .catch((error) => console.error('Failed to load settings', error));
+    .catch((error) => {
+      console.warn('[Offline Mode] Failed to load settings from Supabase:', error);
+      console.warn('[Offline Mode] Using default settings. App will work in offline mode.');
+      // App continua funcionando com configurações padrão
+      // Não bloqueia a interface
+    });
 
   return {
     currentUser: null,
