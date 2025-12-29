@@ -70,30 +70,53 @@ function createWindow() {
     mainWindow.webContents.openDevTools(); // Abrir DevTools automaticamente
   } else {
     // Modo produção - carregar arquivos buildados
-    // Quando empacotado, __dirname aponta para electron-main dentro do app.asar
-    // e dist está no mesmo nível que electron-main
-    const indexPath = path.join(__dirname, '..', 'dist', 'index.html');
-    console.log('Loading index.html from:', indexPath);
+    const fs = require('fs');
+
+    // Lista de caminhos possíveis para index.html em ordem de prioridade
+    const possiblePaths = [
+      // Caminho 1: Dentro do app.asar
+      path.join(__dirname, '..', 'dist', 'index.html'),
+      // Caminho 2: Fora do app.asar (app.asar.unpacked)
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', 'index.html'),
+      // Caminho 3: Direto no resources
+      path.join(process.resourcesPath, 'dist', 'index.html'),
+      // Caminho 4: app.asar direto
+      path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html')
+    ];
+
+    console.log('=== Procurando index.html ===');
     console.log('__dirname:', __dirname);
-    console.log('File exists:', require('fs').existsSync(indexPath));
+    console.log('process.resourcesPath:', process.resourcesPath);
 
-    mainWindow.loadFile(indexPath).catch(err => {
-      console.error('Erro ao carregar index.html:', err);
-      console.error('Tentando caminho alternativo...');
+    let indexPath = null;
+    for (const testPath of possiblePaths) {
+      console.log(`Testando: ${testPath}`);
+      if (fs.existsSync(testPath)) {
+        indexPath = testPath;
+        console.log('✓ ENCONTRADO:', testPath);
+        break;
+      } else {
+        console.log('✗ Não existe');
+      }
+    }
 
-      // Fallback: tentar outro caminho possível
-      const altPath = path.join(process.resourcesPath, 'app.asar', 'dist', 'index.html');
-      console.log('Trying alternative path:', altPath);
+    if (!indexPath) {
+      console.error('ERRO: index.html não encontrado em nenhum caminho!');
+      mainWindow.show();
+      mainWindow.loadURL('data:text/html,<h1 style="color:red">Erro Fatal</h1><p>index.html não encontrado</p><pre>' + possiblePaths.join('\n') + '</pre>');
+      return;
+    }
 
-      mainWindow.loadFile(altPath).catch(err2 => {
-        console.error('Erro no caminho alternativo:', err2);
-        // Mostrar janela com erro para debugging
-        mainWindow.show();
-        mainWindow.loadURL('data:text/html,<h1>Erro ao carregar aplicação</h1><p>Verifique os logs do console</p>');
-      });
+    console.log('Carregando:', indexPath);
+    mainWindow.loadFile(indexPath).then(() => {
+      console.log('✓ index.html carregado com sucesso');
+    }).catch(err => {
+      console.error('✗ Erro ao carregar index.html:', err);
+      mainWindow.show();
+      mainWindow.loadURL('data:text/html,<h1>Erro ao Carregar</h1><p>' + err.message + '</p>');
     });
 
-    // TEMPORÁRIO: Abrir DevTools em produção para diagnosticar tela preta
+    // TEMPORÁRIO: Abrir DevTools em produção para diagnosticar
     mainWindow.webContents.openDevTools();
   }
 

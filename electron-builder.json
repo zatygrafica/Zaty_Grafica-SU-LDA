@@ -41,6 +41,7 @@
     "shortcutName": "Zaty Grafica",
     "installerIcon": "build/icon.ico",
     "uninstallerIcon": "build/icon.ico",
+    "installerHeader": "build/installer/installerHeader.bmp",
     "installerSidebar": "build/installer/installerSidebar.bmp",
     "license": "build/installer/LICENSE.txt",
     "deleteAppDataOnUninstall": false,
