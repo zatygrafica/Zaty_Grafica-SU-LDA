@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, useLocation } from 'react-router-dom';
 import App from '../App';
 import { ProtectedRoute } from './ProtectedRoute';
 import LoginPage from '../pages/Auth/Login';
@@ -19,8 +19,14 @@ const RouteLogger: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 export const AppRouter: React.FC = () => {
   console.log('[AppRouter] Rendering AppRouter');
 
+  // Use HashRouter for Electron (file:// protocol) and BrowserRouter for web
+  const isElectron = window.electronAPI?.isElectron || false;
+  const Router = isElectron ? HashRouter : BrowserRouter;
+
+  console.log('[AppRouter] Using router:', isElectron ? 'HashRouter (Electron)' : 'BrowserRouter (Web)');
+
   return (
-    <BrowserRouter>
+    <Router>
       <RouteLogger>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -31,6 +37,6 @@ export const AppRouter: React.FC = () => {
           </Route>
         </Routes>
       </RouteLogger>
-    </BrowserRouter>
+    </Router>
   );
 };
