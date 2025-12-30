@@ -8,11 +8,13 @@ import LegalDocumentsDrawer from '../../components/LegalDocumentsDrawer';
 import ElectronTitleBar from '../../components/Common/ElectronTitleBar';
 
 const LoginPage: React.FC = () => {
+  console.log('[LoginPage] Rendering login page');
   const { t } = useTranslation();
   const { signIn, loading, error } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = (location.state as { from?: Location })?.from?.pathname ?? '/';
+  console.log('[LoginPage] Redirect target:', redirectTo);
 
   const cards = [
     { icon: Shield, title: t('login.card_management') },
