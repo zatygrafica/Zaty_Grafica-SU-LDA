@@ -15,10 +15,14 @@ const RevenueChart: React.FC = () => {
     const dateRange = eachDayOfInterval({ start: startDate, end: endDate });
 
     const revenueByDay = dateRange.map(date => {
-      const dailyInvoices = invoices.filter(invoice => 
+      const dailyInvoices = invoices.filter(invoice =>
         isSameDay(new Date(invoice.createdAt), date)
       );
-      const dailyRevenue = dailyInvoices.reduce((sum, inv) => sum + inv.order.total, 0);
+      const dailyRevenue = dailyInvoices.reduce((sum, inv) => {
+        // Verificar se order e total existem para evitar erro
+        const total = inv.order?.total ?? 0;
+        return sum + total;
+      }, 0);
       return {
         date: format(date, 'dd/MM'),
         revenue: dailyRevenue

@@ -2,8 +2,9 @@
 // The module resolution is seeing the folder "./electron" before node_modules
 // Solution: require from the parent directory's node_modules explicitly
 
-const { app, BrowserWindow, ipcMain, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeTheme, protocol } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
 
 console.log('Electron app object:', !!app);
@@ -169,8 +170,43 @@ function createWindow() {
   });
 }
 
-// Inicializar app
+// Registrar protocol personalizado para servir arquivos estáticos
 app.whenReady().then(() => {
+  // Registrar protocol para servir arquivos dist/
+  protocol.registerFileProtocol('app', (request, callback) => {
+    let url = request.url.substr(6); // Remove 'app://'
+
+    // Normalizar URL
+    url = decodeURIComponent(url);
+
+    // Se a URL começar com /, remover
+    if (url.startsWith('/')) {
+      url = url.substr(1);
+    }
+
+    // Determinar caminho base do dist
+    let distPath;
+    if (isDev) {
+      distPath = path.join(__dirname, '..', 'dist');
+    } else {
+      // Tentar vários caminhos possíveis
+      const possibleDistPaths = [
+        path.join(__dirname, '..', 'dist'),
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'dist'),
+        path.join(process.resourcesPath, 'dist'),
+        path.join(process.resourcesPath, 'app.asar', 'dist')
+      ];
+
+      distPath = possibleDistPaths.find(p => fs.existsSync(p)) || possibleDistPaths[0];
+    }
+
+    const filePath = path.join(distPath, url);
+
+    console.log('[Protocol Handler] Request:', url, '→', filePath);
+
+    callback({ path: filePath });
+  });
+
   createWindow();
 
   // No macOS, recriar janela quando clicar no ícone do dock
