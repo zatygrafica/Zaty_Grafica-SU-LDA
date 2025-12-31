@@ -9,10 +9,11 @@
   "files": [
     "dist/**/*",
     "electron-main/**/*",
-    "build/icon.ico",
+    "build/**/*",
     "package.json"
   ],
   "asarUnpack": [
+    "dist/**/*.{png,jpg,jpeg,gif,svg,ico}",
     "build/icon.ico"
   ],
   "extraMetadata": {

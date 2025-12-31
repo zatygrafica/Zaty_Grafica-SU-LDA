@@ -2,7 +2,7 @@
 // The module resolution is seeing the folder "./electron" before node_modules
 // Solution: require from the parent directory's node_modules explicitly
 
-const { app, BrowserWindow, ipcMain, dialog, nativeTheme, protocol } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
@@ -162,44 +162,33 @@ function createWindow() {
   });
 }
 
-// Registrar protocol personalizado para servir arquivos estáticos
+// Configurar webRequest para redirecionar assets para unpacked
 app.whenReady().then(() => {
-  // Registrar protocol para servir arquivos dist/
-  protocol.registerFileProtocol('app', (request, callback) => {
-    let url = request.url.substr(6); // Remove 'app://'
-
-    // Normalizar URL
-    url = decodeURIComponent(url);
-
-    // Se a URL começar com /, remover
-    if (url.startsWith('/')) {
-      url = url.substr(1);
-    }
-
-    // Determinar caminho base do dist
-    let distPath;
-    if (isDev) {
-      distPath = path.join(__dirname, '..', 'dist');
-    } else {
-      // Tentar vários caminhos possíveis
-      const possibleDistPaths = [
-        path.join(__dirname, '..', 'dist'),
-        path.join(process.resourcesPath, 'app.asar.unpacked', 'dist'),
-        path.join(process.resourcesPath, 'dist'),
-        path.join(process.resourcesPath, 'app.asar', 'dist')
-      ];
-
-      distPath = possibleDistPaths.find(p => fs.existsSync(p)) || possibleDistPaths[0];
-    }
-
-    const filePath = path.join(distPath, url);
-
-    console.log('[Protocol Handler] Request:', url, '→', filePath);
-
-    callback({ path: filePath });
-  });
-
   createWindow();
+
+  // Interceptar requisições de assets em produção
+  if (!isDev && mainWindow) {
+    mainWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+      const url = details.url;
+
+      // Detectar requisições de assets (imagens)
+      if (/\.(png|jpg|jpeg|gif|svg|ico)$/i.test(url)) {
+        const filename = path.basename(url);
+
+        // Tentar servir do app.asar.unpacked
+        const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', filename);
+
+        if (fs.existsSync(unpackedPath)) {
+          console.log('[Asset Redirect]', filename, '→ unpacked');
+          callback({ redirectURL: 'file://' + unpackedPath.replace(/\\/g, '/') });
+          return;
+        }
+      }
+
+      // Fallback: deixar passar
+      callback({});
+    });
+  }
 
   // No macOS, recriar janela quando clicar no ícone do dock
   app.on('activate', () => {

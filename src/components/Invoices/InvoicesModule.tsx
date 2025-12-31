@@ -68,7 +68,7 @@ const InvoicesModule: React.FC = () => {
     return invoices
       .filter(invoice =>
         invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.order.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+        (invoice.order?.clientName || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [invoices, searchTerm]);
@@ -104,11 +104,11 @@ const InvoicesModule: React.FC = () => {
               <div>
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-gray-900 dark:text-white">{invoice.invoiceNumber}</h3>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{invoice.order.total.toFixed(2)} {settings.currency}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{(invoice.order?.total ?? 0).toFixed(2)} {settings.currency}</p>
                 </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{invoice.order.clientName}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{invoice.order?.clientName ?? 'N/A'}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {t('orders.order_number')}: {invoice.order.orderNumber}
+                  {t('orders.order_number')}: {invoice.order?.orderNumber ?? 'N/A'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {t('common.date')}: {new Date(invoice.createdAt).toLocaleDateString()}
@@ -139,10 +139,10 @@ const InvoicesModule: React.FC = () => {
                 {filteredInvoices.length > 0 ? filteredInvoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-gray-500/10">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{invoice.invoiceNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{invoice.order.orderNumber}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{invoice.order.clientName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{invoice.order?.orderNumber ?? 'N/A'}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{invoice.order?.clientName ?? 'N/A'}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{new Date(invoice.createdAt).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{invoice.order.total.toFixed(2)} {settings.currency}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">{(invoice.order?.total ?? 0).toFixed(2)} {settings.currency}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-1">
                         <Button size="sm" variant="ghost" onClick={() => handleOpenPreview(invoice)} icon={Eye} title={t('common.view')} />
