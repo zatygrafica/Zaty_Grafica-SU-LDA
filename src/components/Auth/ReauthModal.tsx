@@ -74,15 +74,28 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
         setPassword('');
         setIsLoading(false);
 
-        // Chama onSuccess de forma síncrona e imediata
+        // Chama onSuccess de forma síncrona e imediata (SEM await)
         onSuccess();
       } else {
         setError(result.error || 'Senha incorreta');
         setIsLoading(false);
       }
-    } catch (err) {
-      setError('Erro ao validar credenciais');
-      setIsLoading(false);
+    } catch (err: any) {
+      // Se está offline e falhou por conectividade, desbloqueia mesmo assim
+      // pois o usuário já estava autenticado
+      const isNetworkError = err?.message?.includes('fetch') ||
+                            err?.message?.includes('network') ||
+                            err?.message?.includes('offline');
+
+      if (isNetworkError) {
+        console.log('[ReauthModal] Offline mode detected, unlocking without server validation');
+        setPassword('');
+        setIsLoading(false);
+        onSuccess(); // Desbloqueia em modo offline
+      } else {
+        setError('Erro ao validar credenciais');
+        setIsLoading(false);
+      }
     }
   };
 

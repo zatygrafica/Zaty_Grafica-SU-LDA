@@ -2,10 +2,25 @@
 // The module resolution is seeing the folder "./electron" before node_modules
 // Solution: require from the parent directory's node_modules explicitly
 
-const { app, BrowserWindow, ipcMain, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeTheme, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = process.env.NODE_ENV === 'development';
+
+// Registrar protocol scheme ANTES de app.ready
+if (!isDev) {
+  protocol.registerSchemesAsPrivileged([
+    {
+      scheme: 'app',
+      privileges: {
+        standard: true,
+        secure: true,
+        supportFetchAPI: true,
+        corsEnabled: true
+      }
+    }
+  ]);
+}
 
 console.log('Electron app object:', !!app);
 console.log('Starting Zaty Gráfica Electron app...');
@@ -153,29 +168,41 @@ function createWindow() {
   });
 
   // Log de erros do renderer
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription) => {
     console.error('Failed to load:', errorCode, errorDescription);
   });
 
-  mainWindow.webContents.on('crashed', () => {
-    console.error('Renderer process crashed!');
+  mainWindow.webContents.on('render-process-gone', (_event, details) => {
+    console.error('Renderer process gone:', details.reason);
   });
 }
 
-// Configurar webRequest para redirecionar assets para unpacked
+// Configurar protocol handler e webRequest
 app.whenReady().then(() => {
+  // Registrar protocol handler para servir assets
+  if (!isDev) {
+    protocol.handle('app', (request) => {
+      const url = request.url.slice('app://'.length);
+      const filePath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', url);
+
+      console.log('[Protocol] Request:', url, '→', filePath);
+
+      return fetch('file://' + filePath.replace(/\\/g, '/'));
+    });
+  }
+
   createWindow();
 
-  // Interceptar requisições de assets em produção
+  // Interceptar requisições de assets em produção usando webRequest
   if (!isDev && mainWindow) {
     mainWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => {
       const url = details.url;
 
       // Detectar requisições de assets (imagens)
-      if (/\.(png|jpg|jpeg|gif|svg|ico)$/i.test(url)) {
+      if (/\.(png|jpg|jpeg|gif|svg|ico|webp)$/i.test(url)) {
         const filename = path.basename(url);
 
-        // Tentar servir do app.asar.unpacked
+        // Tentar servir do app.asar.unpacked primeiro
         const unpackedPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'dist', filename);
 
         if (fs.existsSync(unpackedPath)) {
@@ -208,10 +235,26 @@ app.on('window-all-closed', () => {
 // ========== AUTO-UPDATER ==========
 
 function checkForUpdates() {
-  if (!autoUpdater) return;
+  if (!autoUpdater) {
+    console.log('[Auto-Updater] Disabled in development mode');
+    return;
+  }
+
+  console.log('[Auto-Updater] Checking for updates...');
 
   autoUpdater.checkForUpdates().catch(err => {
-    console.error('Erro ao verificar atualizações:', err);
+    console.error('[Auto-Updater] Error checking for updates:', err);
+
+    // Não mostrar erro se for problema de rede/repositório não existir
+    // O aplicativo deve funcionar offline sem problemas
+    const isExpectedError = err?.message?.includes('net::') ||
+                           err?.message?.includes('ENOTFOUND') ||
+                           err?.message?.includes('404') ||
+                           err?.message?.includes('ECONNREFUSED');
+
+    if (isExpectedError) {
+      console.log('[Auto-Updater] Update check failed (network/repo issue) - continuing normally');
+    }
   });
 }
 
@@ -283,6 +326,22 @@ if (autoUpdater) {
   // Erro no auto-updater
   autoUpdater.on('error', (err) => {
     console.error('Erro no auto-updater:', err);
+
+    // Mostrar mensagem amigável ao usuário apenas se for erro crítico
+    // (não mostrar se for apenas "não há atualizações" ou erro de rede)
+    const isNetworkError = err?.message?.includes('net::') ||
+                          err?.message?.includes('ENOTFOUND') ||
+                          err?.message?.includes('404');
+
+    if (!isNetworkError) {
+      dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: 'Erro ao Verificar Atualizações',
+        message: 'Não foi possível verificar se há atualizações disponíveis.',
+        detail: 'Por favor, tente novamente mais tarde ou verifique sua conexão com a internet.',
+        buttons: ['OK']
+      });
+    }
   });
 }
 
@@ -291,14 +350,43 @@ if (autoUpdater) {
 // Permitir que o renderer process verifique atualizações manualmente
 ipcMain.handle('check-for-updates', async () => {
   if (isDev || !autoUpdater) {
+    console.log('[IPC] check-for-updates: Disabled in development');
     return { available: false, message: 'Updates disabled in development' };
   }
 
   try {
+    console.log('[IPC] check-for-updates: Checking...');
     const result = await autoUpdater.checkForUpdates();
-    return { available: true, info: result.updateInfo };
+
+    if (result && result.updateInfo) {
+      console.log('[IPC] check-for-updates: Update available:', result.updateInfo.version);
+      return { available: true, info: result.updateInfo };
+    } else {
+      console.log('[IPC] check-for-updates: No updates available');
+      return { available: false, message: 'No updates available' };
+    }
   } catch (error) {
-    return { available: false, error: error.message };
+    console.error('[IPC] check-for-updates: Error:', error);
+
+    // Detectar se é erro de rede/repositório não existir
+    const isNetworkError = error?.message?.includes('net::') ||
+                          error?.message?.includes('ENOTFOUND') ||
+                          error?.message?.includes('404') ||
+                          error?.message?.includes('ECONNREFUSED');
+
+    if (isNetworkError) {
+      return {
+        available: false,
+        error: 'network',
+        message: 'Não foi possível conectar ao servidor de atualizações. Verifique sua conexão com a internet.'
+      };
+    }
+
+    return {
+      available: false,
+      error: error.message,
+      message: 'Erro ao verificar atualizações'
+    };
   }
 });
 
