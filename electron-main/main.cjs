@@ -116,20 +116,12 @@ function createWindow() {
       mainWindow.show();
       mainWindow.loadURL('data:text/html,<h1>Erro ao Carregar</h1><p>' + err.message + '</p>');
     });
-
-    // TEMPORÁRIO: Abrir DevTools em produção para diagnosticar
-    mainWindow.webContents.openDevTools();
   }
 
   // Mostrar janela quando estiver pronta (evita flash branco)
   mainWindow.once('ready-to-show', () => {
     console.log('Window ready to show');
     mainWindow.show();
-
-    // Abrir DevTools em produção para debug (remover depois)
-    if (!isDev) {
-      mainWindow.webContents.openDevTools();
-    }
 
     // Checar atualizações apenas em produção
     if (!isDev) {
