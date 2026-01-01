@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SidebarToggleIcon from './SidebarToggleIcon';
+import { ASSETS } from '../../utils/assetPath';
 
 interface SidebarProps {
   activeModule: string;
@@ -127,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeModule, onModuleChange, isMobil
         {(!sidebarCollapsed || isMobile) && (
           <>
             <div className="flex items-center flex-1 min-w-0 overflow-hidden">
-              <img src="/logo.png" alt="ZATY GRÁFICA" className="h-10 object-contain" />
+              <img src={ASSETS.LOGO} alt="ZATY GRÁFICA" className="h-10 object-contain" />
             </div>
             <button
               onClick={() => isMobile ? setIsMobileMenuOpen(false) : setSidebarCollapsed(true)}

@@ -8,6 +8,7 @@ import SyncStatusIndicator from './SyncStatusIndicator';
 import OnlineStatusIndicator from './OnlineStatusIndicator';
 import { storageService } from '../../services/storageService';
 import Avatar from '../Common/Avatar';
+import { ASSETS } from '../../utils/assetPath';
 
 interface HeaderProps {
   onModuleChange: (module: string) => void;
@@ -97,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
           >
             <Menu className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
-          <img src="/logo.png" alt="ZATY GRÁFICA" className="h-8 object-contain lg:hidden" />
+          <img src={ASSETS.LOGO} alt="ZATY GRÁFICA" className="h-8 object-contain lg:hidden" />
         </div>
 
         <div className="hidden lg:block">

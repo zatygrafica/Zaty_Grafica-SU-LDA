@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/useAuthStore';
 import LegalDocumentsDrawer from '../../components/LegalDocumentsDrawer';
 import ElectronTitleBar from '../../components/Common/ElectronTitleBar';
+import { ASSETS } from '../../utils/assetPath';
 
 const LoginPage: React.FC = () => {
   console.log('[LoginPage] Rendering login page');
@@ -82,7 +83,7 @@ const LoginPage: React.FC = () => {
           <div className="w-full lg:w-5/12">
             <div className="mx-auto w-full max-w-md rounded-2xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 backdrop-blur-md sm:p-8">
               <div className="mb-6 flex flex-col items-center gap-2 sm:mb-8 sm:gap-3">
-                <img src="/logo.png" alt="Zaty Gráfica" className="h-10 opacity-90 sm:h-12" />
+                <img src={ASSETS.LOGO} alt="Zaty Gráfica" className="h-10 opacity-90 sm:h-12" />
                 <div className="space-y-1 text-center">
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
                     {t('login.enter_system')}

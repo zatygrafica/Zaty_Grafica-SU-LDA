@@ -7,6 +7,7 @@ import Modal from '../Common/Modal';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { ASSETS } from '../../utils/assetPath';
 
 interface AttendanceReportPreviewProps {
   isOpen: boolean;
@@ -36,7 +37,7 @@ const AttendanceReportPreview: React.FC<AttendanceReportPreviewProps> = ({ isOpe
         <div id="report-content" className="bg-white text-black p-8 font-sans printable-content text-sm">
           {/* Header */}
           <div className="text-center mb-8">
-            <img src="/logo.png" alt="Logo" className="h-16 w-auto object-contain mx-auto mb-4" />
+            <img src={ASSETS.LOGO} alt="Logo" className="h-16 w-auto object-contain mx-auto mb-4" />
           </div>
 
           {/* Title */}

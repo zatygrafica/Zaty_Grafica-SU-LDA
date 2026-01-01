@@ -2,7 +2,7 @@ const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs');
 
-const logoSource = path.join(__dirname, '../public/logo.png');
+const logoSource = path.join(__dirname, '../public/icon-512x512.png');
 const iconTarget = path.join(__dirname, '../build/icon.ico');
 const tempDir = path.join(__dirname, '../build/temp-icons');
 

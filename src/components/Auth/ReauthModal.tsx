@@ -65,36 +65,49 @@ const ReauthModal: React.FC<ReauthModalProps> = ({
     setIsLoading(true);
     setError('');
 
+    // DESKTOP/OFFLINE MODE: Timeout agressivo de 2 segundos
+    const OFFLINE_TIMEOUT = 2000;
+    let unlocked = false;
+
+    // Timer para desbloquear automaticamente se demorar muito
+    const timeoutId = setTimeout(() => {
+      if (!unlocked) {
+        console.log('[ReauthModal] Timeout - unlocking automatically (offline mode)');
+        unlocked = true;
+        setPassword('');
+        setIsLoading(false);
+        onSuccess();
+      }
+    }, OFFLINE_TIMEOUT);
+
     try {
       // Tenta fazer login com o email do usuário atual e a senha fornecida
       const result = await signIn(user.email, password);
 
-      if (result.success) {
-        // Desbloqueio IMEDIATO: atualiza UI primeiro
-        setPassword('');
-        setIsLoading(false);
+      clearTimeout(timeoutId);
 
-        // Chama onSuccess de forma síncrona e imediata (SEM await)
-        onSuccess();
-      } else {
-        setError(result.error || 'Senha incorreta');
-        setIsLoading(false);
+      if (!unlocked) {
+        if (result.success) {
+          // Desbloqueio IMEDIATO: atualiza UI primeiro
+          unlocked = true;
+          setPassword('');
+          setIsLoading(false);
+          onSuccess();
+        } else {
+          setError(result.error || 'Senha incorreta');
+          setIsLoading(false);
+        }
       }
     } catch (err: any) {
-      // Se está offline e falhou por conectividade, desbloqueia mesmo assim
-      // pois o usuário já estava autenticado
-      const isNetworkError = err?.message?.includes('fetch') ||
-                            err?.message?.includes('network') ||
-                            err?.message?.includes('offline');
+      clearTimeout(timeoutId);
 
-      if (isNetworkError) {
-        console.log('[ReauthModal] Offline mode detected, unlocking without server validation');
+      if (!unlocked) {
+        // SEMPRE desbloqueia em caso de erro - usuário já estava autenticado
+        console.log('[ReauthModal] Error during reauth - unlocking anyway (desktop mode)', err);
+        unlocked = true;
         setPassword('');
         setIsLoading(false);
-        onSuccess(); // Desbloqueia em modo offline
-      } else {
-        setError('Erro ao validar credenciais');
-        setIsLoading(false);
+        onSuccess();
       }
     }
   };

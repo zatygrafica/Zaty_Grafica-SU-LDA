@@ -6,6 +6,7 @@ import { useClientStore } from '../../store/useClientStore';
 import Modal from '../Common/Modal';
 import Button from '../Common/Button';
 import { Printer } from 'lucide-react';
+import { ASSETS } from '../../utils/assetPath';
 
 interface InvoicePreviewModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ isOpen, onClo
           {/* Header */}
           <header className="flex justify-between items-start pb-2">
             <div>
-              <img src="/logo.png" alt="Logo" className="h-12 w-auto object-contain mb-2" />
+              <img src={ASSETS.LOGO} alt="Logo" className="h-12 w-auto object-contain mb-2" />
               <div>
                 <h1 className="font-bold text-lg">{company.name}</h1>
                 <p>{company.address}</p>

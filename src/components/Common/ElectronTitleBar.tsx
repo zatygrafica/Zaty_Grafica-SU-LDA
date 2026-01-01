@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Minus, Square, X, Maximize2 } from 'lucide-react';
+import { ASSETS } from '../../utils/assetPath';
 
 declare global {
   interface Window {
@@ -59,7 +60,7 @@ const ElectronTitleBar: React.FC = () => {
       {/* Área esquerda: Ícone e Título */}
       <div className="flex items-center gap-2">
         <img
-          src="/icon-512x512.png"
+          src={ASSETS.ICON_512}
           alt="Zaty Gráfica"
           className="w-4 h-4"
         />

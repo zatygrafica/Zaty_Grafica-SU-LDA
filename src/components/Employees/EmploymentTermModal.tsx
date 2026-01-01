@@ -7,6 +7,7 @@ import Button from '../Common/Button';
 import { Printer, Edit, Save, RotateCcw } from 'lucide-react';
 import { useEmployeeStore } from '../../store/useEmployeeStore';
 import { useStore } from '../../store/useStore';
+import { ASSETS } from '../../utils/assetPath';
 
 interface EmploymentTermModalProps {
   isOpen: boolean;
@@ -50,7 +51,7 @@ const EmploymentTermModal: React.FC<EmploymentTermModalProps> = ({ isOpen, onClo
 
     const header = `
       <div style="text-align: center; margin-bottom: 2rem;">
-        <img src="/logo.png" alt="Logo" style="height: 4rem; width: auto; object-fit: contain; display: inline-block;" />
+        <img src="${ASSETS.LOGO}" alt="Logo" style="height: 4rem; width: auto; object-fit: contain; display: inline-block;" />
       </div>
     `;
 

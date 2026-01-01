@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import Button from '../Common/Button';
 import { Download, Info } from 'lucide-react';
+import { ASSETS } from '../../utils/assetPath';
 
 declare global {
   interface Window {
@@ -72,7 +73,7 @@ const AboutSettings: React.FC = () => {
         {/* Logo e Nome */}
         <div className="flex items-center space-x-4">
           <img
-            src="/logo.png"
+            src={ASSETS.LOGO}
             alt="Zaty Gráfica"
             className="h-16 w-16 object-contain"
           />
