@@ -27,9 +27,14 @@ export const getAssetPath = (assetPath: string): string => {
 };
 
 /**
- * Common asset paths used throughout the application
+ * Common asset paths - DYNAMIC GETTERS (not static constants)
+ * This ensures paths are resolved at runtime, not module load time
  */
 export const ASSETS = {
-  LOGO: getAssetPath('/logo.png'),
-  ICON_512: getAssetPath('/icon-512x512.png'),
-} as const;
+  get LOGO(): string {
+    return getAssetPath('logo.png');
+  },
+  get ICON_512(): string {
+    return getAssetPath('icon-512x512.png');
+  },
+};
