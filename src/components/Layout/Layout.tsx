@@ -116,7 +116,7 @@ const Layout: React.FC<LayoutProps> = ({ canInstallPWA, onInstallPWA }) => {
   };
 
   return (
-    <div className="h-full flex bg-transparent overflow-hidden">
+    <div className="min-h-screen flex bg-transparent">
       <Sidebar
         activeModule={activeModule}
         onModuleChange={setActiveModule}
@@ -126,14 +126,14 @@ const Layout: React.FC<LayoutProps> = ({ canInstallPWA, onInstallPWA }) => {
         onInstallPWA={onInstallPWA}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <div className="flex-1 flex flex-col">
         {impersonatingUser && <ImpersonationBanner />}
         <Header
           onModuleChange={setActiveModule}
           onMobileMenuToggle={() => setIsMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0">
+        <main className="flex-1 p-6">
           <Suspense fallback={<ModuleLoadingSkeleton />}>
             {renderModule()}
           </Suspense>

@@ -88,7 +88,7 @@ const Header: React.FC<HeaderProps> = ({ onModuleChange, onMobileMenuToggle }) =
   }, [currentUser?.photoUrl, currentUser?.name]);
 
   return (
-    <header className="bg-white dark:bg-neutral-950/70 dark:backdrop-blur-lg border-b border-gray-200/50 dark:border-neutral-800/50 px-4 sm:px-6 py-3 sticky top-0 z-30">
+    <header className="bg-white dark:bg-neutral-950/70 dark:backdrop-blur-lg border-b border-gray-200/50 dark:border-neutral-800/50 px-4 sm:px-6 py-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <button
