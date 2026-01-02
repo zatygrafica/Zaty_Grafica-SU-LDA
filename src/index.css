@@ -11,14 +11,16 @@
   }
 
   /* Estrutura fluida do app */
-  #root {
-    min-height: 100vh;
+  html, body, #root {
+    height: 100%;
     width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   body {
     @apply font-sans text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-neutral-950;
-    margin: 0;
     padding-inline: var(--app-padding-x);
   }
 
