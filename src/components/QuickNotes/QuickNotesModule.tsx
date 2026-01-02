@@ -112,7 +112,7 @@ const QuickNotesModule: React.FC = () => {
   const selectedNote = useMemo(() => notes.find(n => n.id === selectedNoteId), [notes, selectedNoteId]);
 
   return (
-    <div className="flex h-full max-h-[calc(100vh-120px)]">
+    <div className="flex flex-1 min-h-0">
       {/* Sidebar */}
       <div className="w-1/3 min-w-[280px] max-w-[400px] flex flex-col bg-white dark:bg-neutral-900/50 border-r border-gray-200 dark:border-neutral-800">
         <div className="p-4 border-b border-gray-200 dark:border-neutral-800 flex items-center gap-2">

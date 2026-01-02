@@ -126,14 +126,14 @@ const Layout: React.FC<LayoutProps> = ({ canInstallPWA, onInstallPWA }) => {
         onInstallPWA={onInstallPWA}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden min-h-0">
         {impersonatingUser && <ImpersonationBanner />}
         <Header
           onModuleChange={setActiveModule}
           onMobileMenuToggle={() => setIsMobileMenuOpen(true)}
         />
 
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 min-h-0">
           <Suspense fallback={<ModuleLoadingSkeleton />}>
             {renderModule()}
           </Suspense>

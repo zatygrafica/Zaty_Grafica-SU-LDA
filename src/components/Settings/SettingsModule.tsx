@@ -406,7 +406,7 @@ const SettingsModule: React.FC = () => {
             </nav>
           </div>
           <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20 p-6 max-h-[calc(100vh-12rem)] overflow-y-auto scroll-smooth">
+            <div className="bg-white dark:bg-neutral-900/80 dark:backdrop-blur-lg rounded-lg border border-gray-200 dark:border-white/20 p-6">
               {renderContent()}
             </div>
           </div>

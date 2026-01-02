@@ -461,7 +461,7 @@ const InvitationGenerator: React.FC<InvitationGeneratorProps> = ({ onBack }) => 
 
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Formulário */}
-          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-6 space-y-6 overflow-y-auto">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
               <FileText className="w-5 h-5" />
               Configurações do Convite

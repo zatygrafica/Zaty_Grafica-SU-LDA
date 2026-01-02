@@ -53,7 +53,7 @@ const ChatModule: React.FC = () => {
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-white dark:bg-neutral-950/50 rounded-lg border border-gray-200 dark:border-neutral-800 overflow-hidden">
+    <div className="flex flex-1 bg-white dark:bg-neutral-950/50 rounded-lg border border-gray-200 dark:border-neutral-800 overflow-hidden">
       <ConversationList
         selectedConversationId={selectedConversationId}
         onSelectConversation={setSelectedConversationId}
